@@ -27,6 +27,11 @@ P_prime = np.array([
     [-5.10871, 3.523542]
 ])
 
+# Transformation-Matrix
+#       | s * cos(theta) | - s * sin(theta)  | Tx
+# T =   | s * sin(theta) |   s * cos(theta)  | Ty
+#       |   0            |     0             |  1
+
 
 # Function to apply transformation and calculate error
 def transformation_error(params):
@@ -80,11 +85,6 @@ print(f"Estimated noise level: {noise:.4f}")
 
 cos_opt_theta = math.cos(opt_theta)
 sin_opt_theta = math.sin(opt_theta)
-
-# Transformation-Matrix
-#       | s * cos(theta) | - s * sin(theta)  | Tx
-# T =   | s * sin(theta) |   s * cos(theta)  | Ty
-#       |   0            |     0             |  1
 
 transformation_matrix = np.array([
     [opt_scale * cos_opt_theta, -opt_scale * sin_opt_theta, opt_tx],
