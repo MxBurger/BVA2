@@ -64,24 +64,44 @@ result = minimize(transformation_error, initial_guess, method='Nelder-Mead')
 
 # Get optimal parameters
 opt_theta, opt_scale, opt_tx, opt_ty = result.x
+opt_theta_deg = opt_theta * 180 / math.pi
 
 
 # Calculate residual error (approximation of noise level)
 residual_error = result.fun
 noise = np.sqrt(residual_error)
 
+
+print(f"Optimal rotation: {opt_theta_deg:.2f}°")
 print(f"Optimal scale: {opt_scale:.4f}")
 print(f"Optimal translation Tx: {opt_tx:.4f}")
 print(f"Optimal translation Ty: {opt_ty:.4f}")
 print(f"Estimated noise level: {noise:.4f}")
+
+cos_opt_theta = math.cos(opt_theta)
+sin_opt_theta = math.sin(opt_theta)
+
+# Transformation-Matrix
+#       | s * cos(theta) | - s * sin(theta)  | Tx
+# T =   | s * sin(theta) |   s * cos(theta)  | Ty
+#       |   0            |     0             |  1
+
+transformation_matrix = np.array([
+    [opt_scale * cos_opt_theta, -opt_scale * sin_opt_theta, opt_tx],
+    [opt_scale * sin_opt_theta, opt_scale * cos_opt_theta, opt_ty],
+    [0, 0, 1]
+])
+
+print("\nResulting 3x3 transformation matrix:")
+print(transformation_matrix)
 
 # Calculate transformed points with optimal parameters
 transformed_P = []
 for p in P:
     x, y = p
     # Apply optimal transformation
-    x_rot = opt_scale * (x * math.cos(opt_theta) - y * math.sin(opt_theta))
-    y_rot = opt_scale * (x * math.sin(opt_theta) + y * math.cos(opt_theta))
+    x_rot = opt_scale * (x * cos_opt_theta - y * sin_opt_theta)
+    y_rot = opt_scale * (x * sin_opt_theta + y * cos_opt_theta)
     x_final = x_rot + opt_tx
     y_final = y_rot + opt_ty
     transformed_P.append([x_final, y_final])
@@ -119,7 +139,7 @@ for i in range(len(P)):
                  textcoords='offset points', color='red')
 
 # Add text box
-param_text = f"Scale: {opt_scale:.3f}\nTx: {opt_tx:.3f}\nTy: {opt_ty:.3f}\nNoise: {noise:.3f}"
+param_text = f"Rotation: {opt_theta_deg:.3f}\nScale: {opt_scale:.3f}\nTx: {opt_tx:.3f}\nTy: {opt_ty:.3f}\nNoise: {noise:.3f}"
 plt.text(0.02, 0.98, param_text, transform=plt.gca().transAxes, fontsize=10,
          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
