@@ -98,4 +98,4 @@ Point 7: 0.0242
 Point 8: 0.0064
 ```
 
-![Result.png](result.png)
+![Result.png](Result.png)
