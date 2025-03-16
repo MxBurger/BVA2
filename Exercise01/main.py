@@ -114,6 +114,10 @@ print("\nPoint-wise errors:")
 for i, err in enumerate(point_errors):
     print(f"Point {i + 1}: {err:.4f}")
 
+
+
+#### Plot - Code ####
+
 # Create visualization
 plt.figure(figsize=(10, 8))
 
