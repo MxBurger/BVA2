@@ -82,10 +82,16 @@ Der Code bestimmt die Parameter `theta`, `s`, `tx` und `ty` so, dass der durchsc
 quadratische Abstand zwischen den transformierten Punkten und den Zielpunkten minimal wird.
 
 ```
+Optimal rotation: -10.87°
 Optimal scale: 0.5489
 Optimal translation Tx: -2.2145
 Optimal translation Ty: 1.1295
 Estimated noise level: 0.0316
+
+Resulting 3x3 transformation matrix:
+[[ 0.53907679  0.103556   -2.21447428]
+ [-0.103556    0.53907679  1.12947384]
+ [ 0.          0.          1.        ]]
 
 Point-wise errors:
 Point 1: 0.0404
