@@ -28,10 +28,10 @@ while True:
 
     frameCopy = frame.copy() #deep copy, atomar
 
-    if frameCount == 0 :
+    if frameCount < 1 :
         cumulatedFrame = np.zeros(frameCopy.shape)
         cumulatedFrame = cumulatedFrame + frameCopy
-        frameCount = 1
+        frameCount = frameCount + 1
     else:
         cumulatedFrame = cumulatedFrame + frameCopy
         frameCount = frameCount + 1
