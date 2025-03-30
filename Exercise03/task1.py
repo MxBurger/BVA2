@@ -1,17 +1,20 @@
 import cv2
 import numpy as np
+import os
 
 
 def main():
     # Input video (0 = webcam)
-    video_path = "./vtest.avi"
+    video_path = "./epic.mp4"
 
     # Parameters
     bg_learning_frames = 30  # Number of frames to use for initial background model
     bg_learning_rate = 0.01  # Background update rate (0-1)
     motion_threshold = 25  # Threshold for motion detection
-    erosion_size = 2  # Size for noise removal operations
-    dilation_size = 5  # Size for filling gaps in detected motion
+
+    # Create output directory if it doesn't exist
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
 
     # Initialize video capture
     cap = cv2.VideoCapture(video_path)
@@ -51,10 +54,6 @@ def main():
     # Initialize heat map
     heat_map = np.zeros_like(frame_buffer[0], dtype=np.float32)
 
-    # Create kernels for morphological operations
-    erosion_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (erosion_size, erosion_size))
-    dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dilation_size, dilation_size))
-
 
     print("Second stage: process video with the initialized background")
     while True:
@@ -71,11 +70,6 @@ def main():
 
         # Threshold the delta image to get binary mask of moving areas
         thresh = cv2.threshold(frame_delta, motion_threshold, 255, cv2.THRESH_BINARY)[1]
-
-        # Apply morphological operations to clean up the binary mask
-        # First erode to remove small noise, then dilate to fill gaps
-        thresh = cv2.erode(thresh, erosion_kernel, iterations=1)
-        thresh = cv2.dilate(thresh, dilation_kernel, iterations=2)
 
         # Update heat map (accumulate motion intensity)
         heat_map = heat_map + thresh.astype(np.float32) / 255.0
@@ -110,10 +104,13 @@ def main():
 
         frame_count += 1
 
-        # Break loop if 'q' key is pressed
+        # Exit on 'q' press
         key = cv2.waitKey(30) & 0xFF
         if key == ord('q'):
             break
+
+    heat_map_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_custom_heatmap.png"
+    cv2.imwrite(heat_map_path, heat_map_display)
 
     # Clean up
     cap.release()
