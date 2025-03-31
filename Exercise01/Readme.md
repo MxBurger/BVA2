@@ -1,3 +1,10 @@
+Maximilian Burger [6h]
+
+---
+
+Es wird ein Optimierungsverfahren verwendet um die optimalen Parameter für Rotation,
+ Skalierung und Translation zu ermitteln.
+
 ## Bibliotheken und Daten
 
 - `numpy` für numerische Operationen und Arrays
