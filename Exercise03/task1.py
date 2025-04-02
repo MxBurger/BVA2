@@ -1,3 +1,5 @@
+from time import sleep
+
 import cv2
 import numpy as np
 import os
@@ -5,15 +7,14 @@ import os
 
 def main():
     # Input video (0 = webcam)
-    video_path = "./epic.mp4"
+    video_path = "./vtest.avi"
 
-    # Parameters
     bg_learning_frames = 30  # Number of frames to use for initial background model
     bg_learning_rate = 0.01  # Background update rate (0-1)
     motion_threshold = 25  # Threshold for motion detection
 
     # Create output directory if it doesn't exist
-    output_dir = "output"
+    output_dir = "img/task1"
     os.makedirs(output_dir, exist_ok=True)
 
     # Initialize video capture
@@ -22,10 +23,7 @@ def main():
         print('Unable to open video source')
         return
 
-    # Initialize variables
     frame_count = 0
-    background = None
-    heat_map = None
     frame_buffer = []
 
     print("First stage: collect frames for background initialization")
@@ -39,7 +37,7 @@ def main():
         frame_buffer.append(gray_frame)
         frame_count += 1
 
-    # Reset video and variables
+    # Reset video
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     frame_count = 0
 
@@ -53,7 +51,6 @@ def main():
 
     # Initialize heat map
     heat_map = np.zeros_like(frame_buffer[0], dtype=np.float32)
-
 
     print("Second stage: process video with the initialized background")
     while True:
@@ -75,14 +72,23 @@ def main():
         heat_map = heat_map + thresh.astype(np.float32) / 255.0
 
         # Update background model
-        # Check if the pixel is not part of a detected motion (to prevent assimilating moving objects)
-        mask = cv2.bitwise_not(thresh)
+        # Check if the pixel is not part of a detected motion (to prevent including moving objects)
+        mask = 255 - thresh # Invert
         if bg_learning_rate > 0:
             # Only update pixels that are not part of detected motion
             cv2.accumulateWeighted(gray_frame, background, bg_learning_rate, mask=mask)
 
         # Prepare visualization frames
         background_display = background.astype("uint8")
+
+        # Create mask overlay on original frame
+        overlay = frame.copy()
+        # Create a red mask where motion is detected
+        red_mask = np.zeros_like(frame)
+        red_mask[thresh == 255] = [0, 0, 255]  # BGR => red
+        # Add the red mask to the original frame with transparency
+        alpha = 0.5  # Transparency factor
+        mask_overlay = cv2.addWeighted(overlay, 1, red_mask, alpha, 0)
 
         # Normalize heat map for visualization
         if np.max(heat_map) > 0:
@@ -96,11 +102,11 @@ def main():
 
         heat_map_display = cv2.applyColorMap(normalized_heat_map, cv2.COLORMAP_JET)
 
-        # Show
         cv2.imshow("Original Frame", frame)
         cv2.imshow("Background Model", background_display)
         cv2.imshow("Binary Motion Mask", thresh)
         cv2.imshow("Heat Map", heat_map_display)
+        cv2.imshow("Mask Overlay", mask_overlay)
 
         frame_count += 1
 
@@ -109,8 +115,18 @@ def main():
         if key == ord('q'):
             break
 
-    heat_map_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_custom_heatmap.png"
+    # Save
+    original_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_original.jpg"
+    background_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_background.jpg"
+    thresh_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_threshold.jpg"
+    heat_map_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_heat_map.jpg"
+    mask_path = f"{output_dir}/{os.path.splitext(os.path.basename(video_path))[0]}_mask.jpg"
+
+    cv2.imwrite(original_path, frame)
+    cv2.imwrite(background_path, background_display)
+    cv2.imwrite(thresh_path, thresh)
     cv2.imwrite(heat_map_path, heat_map_display)
+    cv2.imwrite(mask_path, mask_overlay)
 
     # Clean up
     cap.release()

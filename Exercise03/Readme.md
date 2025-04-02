@@ -5,8 +5,7 @@ background model.
 ## Stage 1 Background Model Creation
 - The algorithm collects the first 30 frames of the video
 - These frames are converted to grayscale and blurred to reduce noise
-- The background model is created by computing the pixel-by-pixel median across
-all collected frames
+- The background model is created by computing the median across all collected frames
 - This median-based approach ensures that moving objects appearing in
 some initial frames don't become part of the background
 
@@ -31,10 +30,15 @@ gausian blur to reduce noise sensitivity
 
 ## Sample
 
-![original.png](img/task1/original.png)
-![backgroundmodel.png](img/task1/backgroundmodel.png)
-![binary.png](img/task1/binary.png)
-![heatmap.png](img/task1/heatmap.png)
+Original
+![vtest_original.jpg](img/task1/vtest_original.jpg)
+Background
+![vtest_background.jpg](img/task1/vtest_background.jpg)
+Movement Map
+![vtest_threshold.jpg](img/task1/vtest_threshold.jpg)
+Overlay
+![vtest_mask.jpg](img/task1/vtest_mask.jpg)
+Heatmap
+![vtest_heat_map.jpg](img/task1/vtest_heat_map.jpg)
 
 ## Resulting Heatmap
-![vtest_custom_heatmap.png](output/vtest_custom_heatmap.png)
