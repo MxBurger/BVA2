@@ -1,5 +1,7 @@
 Maximilian Burger [7h]
 
+*To execute the code the packages `numpy`, `opencv-python` and `opencv-contrib-python` are required*
+
 # Task 1
 This program detects moving objects in a video by comparing each frame against a
 background model.
@@ -175,15 +177,19 @@ if __name__ == "__main__":
 ## Sample
 
 Original
-![vtest_original.jpg](img/task1/vtest_original.jpg)
+<img src="img/task1/vtest_original.jpg" width="200"/>
 Background
-![vtest_background.jpg](img/task1/vtest_background.jpg)
+<img src="img/task1/vtest_background.jpg" width="200"/>
+
+<!-- pagebreak -->
+
+
 Movement Map
-![vtest_threshold.jpg](img/task1/vtest_threshold.jpg)
+<img src="img/task1/vtest_threshold.jpg" width="200"/>
 Overlay
-![vtest_mask.jpg](img/task1/vtest_mask.jpg)
+<img src="img/task1/vtest_mask.jpg" width="200"/>
 Heatmap
-![vtest_heat_map.jpg](img/task1/vtest_heat_map.jpg)
+<img src="img/task1/vtest_heat_map.jpg" width="200"/>
 
 # Task2
 
@@ -373,37 +379,37 @@ if __name__ == "__main__":
 
 ## Results
 Algorithm: `CNT`
-![vtest_CNT_heatmap.png](img/task2/vtest_CNT_heatmap.png)
+<img src="img/task2/vtest_CNT_heatmap.png" width="200"/>
 Algorithm: `CNT` *with morphological post-processing*
-![vtest_CNT_heatmap_morph.png](img/task2/vtest_CNT_heatmap_morph.png)
+<img src="img/task2/vtest_CNT_heatmap_morph.png" width="200"/>
 Algorithm: `CNT`
-![vtest_CNT_overlay.png](img/task2/vtest_CNT_overlay.png)
-Algorithm: `CNT` *with morphological post-processing*
-![vtest_CNT_overlay_morph.png](img/task2/vtest_CNT_overlay_morph.png)
+<img src="img/task2/vtest_CNT_overlay.png width="200"/>
+Algorithm: `CNT` *with morphological post-processing* 
+<img src="img/task2/vtest_CNT_overlay_morph.png" width="200"/>
 Algorithm: `GMG`
-![vtest_GMG_heatmap.png](img/task2/vtest_GMG_heatmap.png)
+<img src="img/task2/vtest_GMG_heatmap.png" width="200"/>
 Algorithm: `GMG` *with morphological post-processing*
-![vtest_GMG_heatmap_morph.png](img/task2/vtest_GMG_heatmap_morph.png)
+<img src="img/task2/vtest_GMG_heatmap_morph.png" width="200"/>
 Algorithm: `GMG`
-![vtest_GMG_overlay.png](img/task2/vtest_GMG_overlay.png)
+<img src="img/task2/vtest_GMG_overlay.png" width="200"/>
 Algorithm: `GMG` *with morphological post-processing*
-![vtest_GMG_overlay_morph.png](img/task2/vtest_GMG_overlay_morph.png)
+<img src="img/task2/vtest_GMG_overlay_morph.png" width="200"/>
 Algorithm: `KNN`
-![vtest_KNN_heatmap.png](img/task2/vtest_KNN_heatmap.png)
+<img src="img/task2/vtest_KNN_heatmap.png" width="200"/>
 Algorithm: `KNN` *with morphological post-processing*
-![vtest_KNN_heatmap_morph.png](img/task2/vtest_KNN_heatmap_morph.png)
+<img src="img/task2/vtest_KNN_heatmap_morph.png" width="200"/>
 Algorithm: `KNN`
-![vtest_KNN_overlay.png](img/task2/vtest_KNN_overlay.png)
+<img src="img/task2/vtest_KNN_overlay.png" width="200"/>
 Algorithm: `KNN` *with morphological post-processing*
-![vtest_KNN_overlay_morph.png](img/task2/vtest_KNN_overlay_morph.png)
+<img src="img/task2/vtest_KNN_overlay_morph.png" width="200"/>
 Algorithm: `MOG2`
-![vtest_MOG2_heatmap.png](img/task2/vtest_MOG2_heatmap.png)
+<img src="img/task2/vtest_MOG2_heatmap.png" width="200"/>
 Algorithm: `MOG2` *with morphological post-processing*
-![vtest_MOG2_heatmap_morph.png](img/task2/vtest_MOG2_heatmap_morph.png)
+<img src="img/task2/vtest_MOG2_heatmap_morph.png" width="200"/>
 Algorithm: `MOG2`
-![vtest_MOG2_overlay.png](img/task2/vtest_MOG2_overlay.png)
+<img src="img/task2/vtest_MOG2_overlay.png" width="200"/>
 Algorithm: `MOG2` *with morphological post-processing*
-![vtest_MOG2_overlay_morph.png](img/task2/vtest_MOG2_overlay_morph.png)
+<img src="img/task2/vtest_MOG2_overlay_morph.png" width="200"/>
 
 ## Conclusions and Recommendations
 
