@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d706c4f4-98fc-4aad-bc90-58ad83c9593e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/ConvolutionFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/ConvolutionFilter.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/FilterTemplate_.class" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/FilterTemplate_.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/ImageJUtility.class" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/ImageJUtility.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/ImageTransformationFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/ImageTransformationFilter.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/Invert_.class" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/Invert_.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/KMeansClustering_.class" beforeDir="false" afterPath="$PROJECT_DIR$/../Lesson03/ImageJDevProject/plugins/Custom/KMeansClustering_.class" afterDir="false" />
-    </list>
+    <list default="true" id="d706c4f4-98fc-4aad-bc90-58ad83c9593e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -21,9 +13,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 1
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
   <component name="ProjectId" id="2vBBekCvi0AujWBj7DdZhmIFgEH" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -35,7 +27,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/max/Desktop/FH/BVA2/Lesson04",
+    "last_opened_file_path": "/home/max/Desktop/FH/BVA2/Exercise03",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -67,6 +59,7 @@
       <option name="presentableId" value="Default" />
       <updated>1743608683626</updated>
       <workItem from="1743608684798" duration="383000" />
+      <workItem from="1743853665624" duration="22000" />
     </task>
     <servers />
   </component>
