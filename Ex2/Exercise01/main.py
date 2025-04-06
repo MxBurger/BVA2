@@ -36,45 +36,43 @@ def detect_balls_yolo(model, images):
         all_boxes.append(boxes)
     return all_boxes
 
-# 3. segment the ball using HoughCircles
+
 def segment_ball(image, box):
     x1, y1, x2, y2 = box['xyxy']
     roi = image[y1:y2, x1:x2]
-    # dimensions of the ROI
+    # dimensions
     h, w = roi.shape[:2]
-
     # convert to grayscale and apply Gaussian blur
     gray_roi = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
     blurred = cv2.GaussianBlur(gray_roi, (7, 7), 0)
-
-    # parameters for HoughCircles
+    # parameters for HoughCircles depend on roi size
     min_dim = min(h, w)
-    min_radius = max(min_dim // 2, 10)  # at least 10 Pixel or 1/2 of the ROI
-    max_radius = min_dim  # at most the size of the ROI
+    min_radius = max(min_dim // 5, 10) # min radius is 1/5 of the smallest dimension
+    max_radius = min_dim  # max radius is the size of the ROI
 
     # Hough Circle detection
     circles = cv2.HoughCircles(
         blurred,
         cv2.HOUGH_GRADIENT,
-        dp=1.4,
+        dp=1.8, 
         minDist=min_dim,
-        param1=100,  # sharp edges
-        param2=25,  # lower threshold for center detection
+        param1=100,  # sharpness of the edges
+        param2=25,  # minimum number of votes to detect a circle
         minRadius=min_radius,
         maxRadius=max_radius
     )
 
     mask = np.zeros((h, w), dtype=np.uint8)
-    if circles is not None:
-        circles = np.uint16(np.around(circles))
-        # use the first detected circle (highest confidence)
-        circle = circles[0, 0]
-        center_x, center_y, radius = circle
-        # apply circle to mask
-        cv2.circle(mask, (center_x, center_y), radius, 255, -1)
-        return mask
+    circles = np.uint16(np.around(circles))
+    # use the first detected circle (highest confidence)
+    circle = circles[0, 0]
+    center_x, center_y, radius = circle
+    # draw the circle on the mask
+    cv2.circle(mask, (center_x, center_y), radius, 255, -1)
+    return mask
 
-
+# 3. find the centroid of the ball using the mask contour
+# (https://pyimagesearch.com/2016/02/01/opencv-center-of-contour/)
 def find_centroid(mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
@@ -132,7 +130,7 @@ def analyze_tennis_balls(directory):
                 plt.subplot(1, 4, 3)
                 roi = img[y1:y2, x1:x2].copy()
                 mask_colored = np.zeros_like(roi)
-                mask_colored[mask > 0] = [255, 0, 0]
+                mask_colored[mask > 0] = [255, 0, 255]
                 alpha = 0.5
                 overlay_roi = cv2.addWeighted(roi, 1, mask_colored, alpha, 0)
                 plt.imshow(overlay_roi)
@@ -158,7 +156,7 @@ def statistical_analysis(results):
         yolo_x, yolo_y = result['yolo_center']
         seg_x, seg_y = result['segmentation_centroid']
         plt.scatter(yolo_x, yolo_y, color='red', label='YOLO' if i == 0 else "")
-        plt.scatter(seg_x, seg_y, color='green', label='Segmentierung' if i == 0 else "")
+        plt.scatter(seg_x, seg_y, color='green', label='Segmentation' if i == 0 else "")
         plt.plot([yolo_x, seg_x], [yolo_y, seg_y], 'k-', alpha=0.3)
 
     plt.xlabel('X-Coordinate')
