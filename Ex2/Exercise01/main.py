@@ -3,12 +3,9 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
-import pandas as pd
-from scipy import stats
-
 
 # 1. load sample images
-# source: https://storage.googleapis.com/openimages/web/visualizer/index.html?type=detection&set=train&c=%2Fm%2F05ctyq
+# image-source: https://storage.googleapis.com/openimages/web/visualizer/index.html?type=detection&set=train&c=%2Fm%2F05ctyq
 def load_images(directory):
     images = []
     filenames = []
@@ -18,7 +15,6 @@ def load_images(directory):
         images.append(img)
         filenames.append(filename)
     return images, filenames
-
 
 # 2. use YOLO11 for ball localisation (https://docs.ultralytics.com/models/)
 def detect_balls_yolo(model, images):
@@ -40,70 +36,72 @@ def detect_balls_yolo(model, images):
         all_boxes.append(boxes)
     return all_boxes
 
-# 3. segment ball within the bounding box
-def segment_ball_by_color(image, box):
+# 3. segment the ball using HoughCircles
+def segment_ball(image, box):
     x1, y1, x2, y2 = box['xyxy']
     roi = image[y1:y2, x1:x2]
+    # dimensions of the ROI
+    h, w = roi.shape[:2]
 
-    # convert to hsv-model for better segmentation
-    hsv_roi = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
+    # convert to grayscale and apply Gaussian blur
+    gray_roi = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
+    blurred = cv2.GaussianBlur(gray_roi, (7, 7), 0)
 
-    # bounds for tennis ball(yellowish-green)
-    lower_yellow = np.array([25, 25, 25])
-    upper_yellow = np.array([95, 255, 255])
+    # parameters for HoughCircles
+    min_dim = min(h, w)
+    min_radius = max(min_dim // 2, 10)  # at least 10 Pixel or 1/2 of the ROI
+    max_radius = min_dim  # at most the size of the ROI
 
-    # create mask
-    mask = cv2.inRange(hsv_roi, lower_yellow, upper_yellow)
+    # Hough Circle detection
+    circles = cv2.HoughCircles(
+        blurred,
+        cv2.HOUGH_GRADIENT,
+        dp=1.4,
+        minDist=min_dim,
+        param1=100,  # sharp edges
+        param2=25,  # lower threshold for center detection
+        minRadius=min_radius,
+        maxRadius=max_radius
+    )
 
-    # reduce noise with morphological operations
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-    return mask
+    mask = np.zeros((h, w), dtype=np.uint8)
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        # use the first detected circle (highest confidence)
+        circle = circles[0, 0]
+        center_x, center_y, radius = circle
+        # apply circle to mask
+        cv2.circle(mask, (center_x, center_y), radius, 255, -1)
+        return mask
 
 
 def find_centroid(mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
     if not contours:
         return None
-
     largest_contour = max(contours, key=cv2.contourArea)
-
     M = cv2.moments(largest_contour)
-
     if M["m00"] == 0:
         return None
-
     cx = int(M["m10"] / M["m00"])
     cy = int(M["m01"] / M["m00"])
-
     return (cx, cy)
-
 
 def analyze_tennis_balls(directory):
     images, filenames = load_images(directory)
-    print(f"Anzahl geladener Bilder: {len(images)}")
-
-    model = YOLO("yolo11n.pt")  # oder ein anderes vortrainiertes Modell
-
+    print(f"Found: {len(images)} images")
+    model = YOLO("yolo11n.pt")
     all_boxes = detect_balls_yolo(model, images)
-
     results = []
-
     for i, (img, boxes, filename) in enumerate(zip(images, all_boxes, filenames)):
         for j, box in enumerate(boxes):
             x1, y1, x2, y2 = box['xyxy']
             yolo_center = box['center']
-
-            mask = segment_ball_by_color(img, box)
-
+            mask = segment_ball(img, box)
             centroid = find_centroid(mask)
 
             if centroid is not None:
                 centroid_global = (centroid[0] + x1, centroid[1] + y1)
-
                 results.append({
                     'filename': filename,
                     'ball_id': j,
@@ -115,79 +113,57 @@ def analyze_tennis_balls(directory):
                                                   (yolo_center[1] - centroid_global[1]) ** 2)
                 })
 
-                if i < 5:
-                    plt.figure(figsize=(12, 6))
+                plt.figure(figsize=(16, 4))
 
-                    plt.subplot(1, 3, 1)
-                    img_with_box = img.copy()
-                    cv2.rectangle(img_with_box, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.circle(img_with_box, yolo_center, 5, (0, 0, 255), -1)
-                    plt.imshow(img_with_box)
-                    plt.title('YOLO Bounding Box')
+                # 1. Visualize YOLO bounding box
+                plt.subplot(1, 4, 1)
+                img_with_box = img.copy()
+                cv2.rectangle(img_with_box, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                cv2.circle(img_with_box, yolo_center, 5, (0, 0, 255), -1)
+                plt.imshow(img_with_box)
+                plt.title('YOLO Bounding Box')
 
-                    plt.subplot(1, 3, 2)
-                    plt.imshow(mask, cmap='gray')
-                    plt.title('Segmentation mask')
+                # 2. Visualize segmentation mask
+                plt.subplot(1, 4, 2)
+                plt.imshow(mask, cmap='gray')
+                plt.title('Segmentation mask')
 
-                    plt.subplot(1, 3, 3)
-                    img_with_centers = img.copy()
-                    cv2.rectangle(img_with_centers, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.circle(img_with_centers, yolo_center, 5, (0, 0, 255), -1)
-                    cv2.circle(img_with_centers, centroid_global, 5, (0, 255, 0), -1)
-                    plt.imshow(img_with_centers)
-                    plt.title('Both centers')
+                # 3. Visualize mask over original roi
+                plt.subplot(1, 4, 3)
+                roi = img[y1:y2, x1:x2].copy()
+                mask_colored = np.zeros_like(roi)
+                mask_colored[mask > 0] = [255, 0, 0]
+                alpha = 0.5
+                overlay_roi = cv2.addWeighted(roi, 1, mask_colored, alpha, 0)
+                plt.imshow(overlay_roi)
+                plt.title('Mask Overlay')
 
-                    plt.tight_layout()
-                    plt.show()
+                # 4. Visualize both centers
+                plt.subplot(1, 4, 4)
+                img_with_centers = img.copy()
+                cv2.rectangle(img_with_centers, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                cv2.circle(img_with_centers, yolo_center, 5, (0, 0, 255), -1)  # YOLO in Rot
+                cv2.circle(img_with_centers, centroid_global, 5, (0, 255, 0), -1)  # Segmentierung in Grün
+                plt.imshow(img_with_centers)
+                plt.title('Both centers')
+
+                plt.tight_layout()
+                plt.show()
 
     return results
 
-
 def statistical_analysis(results):
-    if not results:
-        print("Keine Ergebnisse zur Analyse gefunden.")
-        return
-
-    df = pd.DataFrame(results)
-
-    stats_desc = df[['difference_x', 'difference_y', 'euclidean_distance']].describe()
-    print("Deskriptive Statistik:")
-    print(stats_desc)
-
-    plt.figure(figsize=(15, 5))
-
-    plt.subplot(1, 3, 1)
-    plt.hist(df['difference_x'], bins=20)
-    plt.title('Differenz in X-Richtung')
-
-    plt.subplot(1, 3, 2)
-    plt.hist(df['difference_y'], bins=20)
-    plt.title('Differenz in Y-Richtung')
-
-    plt.subplot(1, 3, 3)
-    plt.hist(df['euclidean_distance'], bins=20)
-    plt.title('Euklidische Distanz')
-
-    plt.tight_layout()
-    plt.show()
-
-    t_stat_x, p_val_x = stats.ttest_1samp(df['difference_x'], 0)
-    t_stat_y, p_val_y = stats.ttest_1samp(df['difference_y'], 0)
-
-    print(f"t-Test für X-Differenz: t={t_stat_x:.4f}, p={p_val_x:.4f}")
-    print(f"t-Test für Y-Differenz: t={t_stat_y:.4f}, p={p_val_y:.4f}")
-
     plt.figure(figsize=(8, 8))
-    for i, row in df.iterrows():
-        yolo_x, yolo_y = row['yolo_center']
-        seg_x, seg_y = row['segmentation_centroid']
+    for i, result in enumerate(results):
+        yolo_x, yolo_y = result['yolo_center']
+        seg_x, seg_y = result['segmentation_centroid']
         plt.scatter(yolo_x, yolo_y, color='red', label='YOLO' if i == 0 else "")
         plt.scatter(seg_x, seg_y, color='green', label='Segmentierung' if i == 0 else "")
         plt.plot([yolo_x, seg_x], [yolo_y, seg_y], 'k-', alpha=0.3)
 
-    plt.xlabel('X-Koordinate')
-    plt.ylabel('Y-Koordinate')
-    plt.title('Vergleich der Zentren aus YOLO und Segmentierung')
+    plt.xlabel('X-Coordinate')
+    plt.ylabel('Y-Coordinate')
+    plt.title('YOLO and segmentation centers in comparison')
     plt.legend()
     plt.grid(True)
     plt.show()
