@@ -1,3 +1,5 @@
+import time
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -114,10 +116,13 @@ def main():
     bandwidth = 0.1  # Mean Shift bandwidth parameter
     sampling_ratio = 0.05  # Ratio of pixels to sample
 
+    start_time = time.time()
     # Process the image
     original, clustered, sampled_colors, shifted_colors, iterations_history = process_image(
         image_path, bandwidth, sampling_ratio
     )
+
+    print(f"Image segmentation completed in {time.time() - start_time:.2f} seconds")
 
     # Display original and clustered images
     plt.figure(figsize=(12, 6))

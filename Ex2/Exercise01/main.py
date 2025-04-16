@@ -150,7 +150,32 @@ def analyze_tennis_balls(directory):
 
     return results
 
+
 def statistical_analysis(results):
+    distances = [result['euclidean_distance'] for result in results]
+
+    min_distance = min(distances)
+    max_distance = max(distances)
+    avg_distance = sum(distances) / len(distances)
+
+    # Median
+    sorted_distances = sorted(distances)
+    n = len(sorted_distances)
+    if n % 2 == 0:
+        # even number of result-sets
+        median_distance = (sorted_distances[n // 2 - 1] + sorted_distances[n // 2]) / 2
+    else:
+        # odd number of result-sets
+        median_distance = sorted_distances[n // 2]
+
+    print("\nStats:")
+    print(f"Minimum: {min_distance:.2f} Pixel")
+    print(f"Maximum: {max_distance:.2f} Pixel")
+    print(f"Average: {avg_distance:.2f} Pixel")
+    print(f"Median: {median_distance:.2f} Pixel")
+    print(f"Amount of analyzed Balls: {len(distances)}")
+
+    # Visualisation
     plt.figure(figsize=(8, 8))
     for i, result in enumerate(results):
         yolo_x, yolo_y = result['yolo_center']
@@ -164,6 +189,18 @@ def statistical_analysis(results):
     plt.title('YOLO and segmentation centers in comparison')
     plt.legend()
     plt.grid(True)
+    plt.show()
+
+    # Histogram of euclidian distances
+    plt.figure(figsize=(10, 6))
+    plt.hist(distances, bins=10, color='skyblue', edgecolor='black')
+    plt.axvline(avg_distance, color='red', linestyle='dashed', linewidth=1, label=f'Average: {avg_distance:.2f}')
+    plt.axvline(median_distance, color='green', linestyle='dashed', linewidth=1, label=f'Median: {median_distance:.2f}')
+    plt.xlabel('Euclidean distance in pixels')
+    plt.ylabel('Frequency')
+    plt.title('Distribution of Euclidean Distances')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
     plt.show()
 
 
