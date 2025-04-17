@@ -147,7 +147,7 @@ def process_image(image_path, bandwidth, sampling_ratio=0.1):
 
 This function:
 1. Loads and normalizes the image (converts to RGB and scales to [0,1])
-2. Samples a subset of pixels for efficiency (controlled by sampling_ratio)
+2. Samples a subset of pixels for efficiency (controlled by sampling_ratio)  [Optimization see here](##Optimization)
 3. Runs Mean Shift clustering on the sampled pixels
 4. Identifies unique clusters by rounding and finding unique values
 5. Maps each original pixel to its nearest cluster center
@@ -299,20 +299,15 @@ The bandwidth parameter controls the clustering granularity:
 
 The code evaluates and outputs the final number of clusters, allowing for experimental analysis of how the bandwidth parameter affects segmentation results across different images.
 
-## Optimization Techniques
+## Optimization
 
-Several optimizations improve the algorithm's efficiency:
+This optimizations improve the algorithm's efficiency:
 
 1. **Pixel sampling**: Only a fraction of pixels (controlled by sampling_ratio) are used for the Mean Shift algorithm to reduce computation time
 2. **Early convergence**: The algorithm stops when the maximum shift falls below a threshold
 3. **Efficient cluster assignment**: After finding cluster centers, pixels are assigned to their nearest center without running Mean Shift on every pixel
 
-## Conclusion
-
-This implementation provides a complete solution for Mean Shift color image segmentation with comprehensive visualizations that illustrate both the algorithm's process and results. The code satisfies all requirements from the assignment:
-
-1. Implementation of Mean Shift clustering for color images with the bandwidth as the only input parameter
-2. Visualization of the clustering process in 3D color space with animation
-3. Visualization of the 3D color density topography
-
-The solution allows for experimentation with different bandwidth values to analyze their effect on the clustering results for various images.
+## Results
+![mean_shift_result.png](img/mean_shift_result.png)
+![color_space_clustering.png](img/color_space_clustering.png)
+![color_density_topography.png](img/color_density_topography.png)

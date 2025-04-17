@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -26,7 +28,6 @@ def visualize_3d_color_space(sampled_colors, shifted_colors, iterations_history=
 
     plt.tight_layout()
 
-    # If we have iteration history and animation path, create animation
     if iterations_history is not None and animation_path is not None:
         def update(frame):
             ax.clear()
@@ -67,8 +68,10 @@ def gaussian_weight(dist, bandwidth):
     return np.exp(-0.5 * (dist ** 2) / (bandwidth ** 2))
 
 
-# Visualize the 3D color density topography without using scikit-learn
+# Visualize the 3D color density topography
 def visualize_color_density(sampled_colors, bandwidth):
+    print(f"Visualize color density")
+
     # 2D projections of the 3D density
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
@@ -81,6 +84,7 @@ def visualize_color_density(sampled_colors, bandwidth):
     # Projections to visualize: RG, RB, GB
     projections = [(0, 1, 'Red-Green'), (0, 2, 'Red-Blue'), (1, 2, 'Green-Blue')]
 
+    start_time = time.time()
     for i, (dim1, dim2, title) in enumerate(projections):
         # Project data to 2D
         points = sampled_colors[:, [dim1, dim2]]
@@ -108,5 +112,6 @@ def visualize_color_density(sampled_colors, bandwidth):
         axes[i].set_ylabel(['Green', 'Blue', 'Blue'][i])
         axes[i].set_title(f'{title} Projection')
 
+    print(f"Visualized color density in  {time.time() - start_time:.2f} seconds")
     plt.tight_layout()
     return fig

@@ -143,7 +143,8 @@ def main():
     visu.visualize_3d_color_space(sampled_colors, shifted_colors)
     plt.savefig('color_space_clustering.png')
 
-    visu.visualize_3d_color_space(sampled_colors, shifted_colors, iterations_history, 'color_space_animation.gif')
+    visu.visualize_3d_color_space(sampled_colors, shifted_colors, iterations_history,
+                                  'doc/img/color_space_animation.gif')
 
     visu.visualize_color_density(sampled_colors, bandwidth)
     plt.savefig('color_density_topography.png')
