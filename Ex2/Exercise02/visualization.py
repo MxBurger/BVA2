@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
-from sklearn.neighbors import KernelDensity
-
 # Visualize original and shifted colors in 3D RGB space
 def visualize_3d_color_space(sampled_colors, shifted_colors, iterations_history=None, animation_path=None):
     fig = plt.figure(figsize=(12, 10))
@@ -58,7 +56,18 @@ def visualize_3d_color_space(sampled_colors, shifted_colors, iterations_history=
 
     return fig
 
-# Visualize the 3D color density topography
+
+# Calculate Euclidean distance between two 2D points
+def point_dist(p1, p2):
+    return np.sqrt(np.sum((p1 - p2) ** 2))
+
+
+# Calculate Gaussian weight based on distance and bandwidth
+def gaussian_weight(dist, bandwidth):
+    return np.exp(-0.5 * (dist ** 2) / (bandwidth ** 2))
+
+
+# Visualize the 3D color density topography without using scikit-learn
 def visualize_color_density(sampled_colors, bandwidth):
     # 2D projections of the 3D density
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
@@ -67,6 +76,7 @@ def visualize_color_density(sampled_colors, bandwidth):
     x = np.linspace(0, 1, 100)
     y = np.linspace(0, 1, 100)
     X, Y = np.meshgrid(x, y)
+    xy_sample = np.vstack([X.ravel(), Y.ravel()]).T
 
     # Projections to visualize: RG, RB, GB
     projections = [(0, 1, 'Red-Green'), (0, 2, 'Red-Blue'), (1, 2, 'Green-Blue')]
@@ -75,14 +85,21 @@ def visualize_color_density(sampled_colors, bandwidth):
         # Project data to 2D
         points = sampled_colors[:, [dim1, dim2]]
 
-        # Fit kernel density
-        kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
-        kde.fit(points)
+        # Compute density at each point in the grid
+        Z = np.zeros(len(xy_sample))
 
-        # Evaluate density on the grid
-        xy_sample = np.vstack([X.ravel(), Y.ravel()]).T
-        log_density = kde.score_samples(xy_sample)
-        Z = np.exp(log_density).reshape(X.shape)
+        for j, grid_point in enumerate(xy_sample):
+            # Calculate kernel density estimation at this point
+            density = 0
+            for color_point in points:
+                dist = point_dist(grid_point, color_point)
+                density += gaussian_weight(dist, bandwidth)
+
+            # Normalize by number of points
+            Z[j] = density / len(points)
+
+        # Reshape to match the grid
+        Z = Z.reshape(X.shape)
 
         # Plot contour
         axes[i].contourf(X, Y, Z, cmap='viridis')

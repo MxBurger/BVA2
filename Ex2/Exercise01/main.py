@@ -4,7 +4,8 @@ import os
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
 
-# 1. load sample images
+
+# load sample images
 # image-source: https://storage.googleapis.com/openimages/web/visualizer/index.html?type=detection&set=train&c=%2Fm%2F05ctyq
 def load_images(directory):
     images = []
@@ -16,7 +17,8 @@ def load_images(directory):
         filenames.append(filename)
     return images, filenames
 
-# 2. use YOLO11 for ball localisation (https://docs.ultralytics.com/models/)
+
+# use YOLO11 for ball localisation (https://docs.ultralytics.com/models/)
 def detect_balls_yolo(model, images):
     all_boxes = []
     for img in images:
@@ -37,6 +39,8 @@ def detect_balls_yolo(model, images):
     return all_boxes
 
 
+# segment the ball within the bounding box using Hough Circle detection
+# (https://theailearner.com/tag/cv2-houghcircles/)
 def segment_ball(image, box):
     x1, y1, x2, y2 = box['xyxy']
     roi = image[y1:y2, x1:x2]
@@ -47,14 +51,14 @@ def segment_ball(image, box):
     blurred = cv2.GaussianBlur(gray_roi, (7, 7), 0)
     # parameters for HoughCircles depend on roi size
     min_dim = min(h, w)
-    min_radius = max(min_dim // 5, 10) # min radius is 1/5 of the smallest dimension
+    min_radius = max(min_dim // 5, 10)  # min radius is 1/5 of the smallest dimension
     max_radius = min_dim  # max radius is the size of the ROI
 
     # Hough Circle detection
     circles = cv2.HoughCircles(
         blurred,
         cv2.HOUGH_GRADIENT,
-        dp=1.8, 
+        dp=1.8,
         minDist=min_dim,
         param1=100,  # sharpness of the edges
         param2=25,  # minimum number of votes to detect a circle
@@ -71,7 +75,8 @@ def segment_ball(image, box):
     cv2.circle(mask, (center_x, center_y), radius, 255, -1)
     return mask
 
-# 3. find the centroid of the ball using the mask contour
+
+# find the centroid of the ball using the mask contour
 # (https://pyimagesearch.com/2016/02/01/opencv-center-of-contour/)
 def find_centroid(mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -85,6 +90,7 @@ def find_centroid(mask):
     cy = int(M["m01"] / M["m00"])
     return (cx, cy)
 
+# orchestrate the analysis
 def analyze_tennis_balls(directory):
     images, filenames = load_images(directory)
     print(f"Found: {len(images)} images")
@@ -113,7 +119,7 @@ def analyze_tennis_balls(directory):
 
                 plt.figure(figsize=(16, 4))
 
-                # 1. Visualize YOLO bounding box
+                # Visualize YOLO bounding box
                 plt.subplot(1, 4, 1)
                 img_with_box = img.copy()
                 cv2.rectangle(img_with_box, (x1, y1), (x2, y2), (255, 0, 0), 2)
@@ -121,12 +127,12 @@ def analyze_tennis_balls(directory):
                 plt.imshow(img_with_box)
                 plt.title('YOLO Bounding Box')
 
-                # 2. Visualize segmentation mask
+                # Visualize segmentation mask
                 plt.subplot(1, 4, 2)
                 plt.imshow(mask, cmap='gray')
                 plt.title('Segmentation mask')
 
-                # 3. Visualize mask over original roi
+                # Visualize mask over original roi
                 plt.subplot(1, 4, 3)
                 roi = img[y1:y2, x1:x2].copy()
                 mask_colored = np.zeros_like(roi)
@@ -136,7 +142,7 @@ def analyze_tennis_balls(directory):
                 plt.imshow(overlay_roi)
                 plt.title('Mask Overlay')
 
-                # 4. Visualize both centers
+                # Visualize both centers
                 plt.subplot(1, 4, 4)
                 img_with_centers = img.copy()
                 cv2.rectangle(img_with_centers, (x1, y1), (x2, y2), (255, 0, 0), 2)
@@ -150,7 +156,7 @@ def analyze_tennis_balls(directory):
 
     return results
 
-
+# analyze the results
 def statistical_analysis(results):
     distances = [result['euclidean_distance'] for result in results]
 
