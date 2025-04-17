@@ -311,3 +311,5 @@ This optimizations improve the algorithm's efficiency:
 ![mean_shift_result.png](img/mean_shift_result.png)
 ![color_space_clustering.png](img/color_space_clustering.png)
 ![color_density_topography.png](img/color_density_topography.png)
+
+>The color space animation can be viewed as gif in the assignment folder.
