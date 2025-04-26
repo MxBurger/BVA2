@@ -7,24 +7,27 @@ from SubImageRegion import SubImageRegion
 
 logging_enabled = False
 
+
 def log(*string: str):
     if logging_enabled:
         print(string)
+
 
 class OCRanalysis:
     def __init__(self):
         self.F_FGcount = 0
         self.F_MaxDistX = 1
         self.F_MaxDistY = 2
-        self.F_AvgDistanceCentroide= 3
-        self.F_MaxDistanceCentroide= 4
-        self.F_MinDistanceCentroide= 5
+        self.F_AvgDistanceCentroide = 3
+        self.F_MaxDistanceCentroide = 4
+        self.F_MinDistanceCentroide = 5
         self.F_Circularity = 6
         self.F_CentroideRelPosX = 7
         self.F_CentroideRelPosY = 8
         self.F_HoleCount = 9
 
-    def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float, shrink_chars: bool):
+    def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float,
+            shrink_chars: bool):
         img = cv2.imread(img_in_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             print(f"Fehler: Konnte Bild '{img_in_path}' nicht laden.")
@@ -150,7 +153,8 @@ def split_characters_vertically(row_image, BG_val, FG_val, orig_img, shrink_char
         # Skip too narrow characters (probably noise)
         min_char_width = 2
         if char_width >= min_char_width:
-            char_region = SubImageRegion(
+            # Create a temporary subimage with just the character width
+            width_limited_char_region = SubImageRegion(
                 row_image.startX + start_col,
                 row_image.startY,
                 char_width,
@@ -159,43 +163,68 @@ def split_characters_vertically(row_image, BG_val, FG_val, orig_img, shrink_char
             )
 
             if shrink_chars:
-                # shrink the character region to only include the actual character
-                shrinked_char_region = shrink_sub_image_region(char_region, FG_val)
-                return_char_arr.append(shrinked_char_region)
+                # Now limit the character vertically
+                char_start_y, char_height = limit_character_vertically(width_limited_char_region, BG_val)
+
+                # Create the final character region with proper horizontal bounds
+                limited_char_region = SubImageRegion(
+                    row_image.startX + start_col,
+                    row_image.startY + char_start_y,
+                    char_width,
+                    char_height,
+                    orig_img
+                )
+
+                return_char_arr.append(limited_char_region)
             else:
-                return_char_arr.append(char_region)
+                return_char_arr.append(width_limited_char_region)
 
     return return_char_arr
 
-def shrink_sub_image_region(region, FG_val):
-    min_x = region.width
-    min_y = region.height
-    max_x = 0
-    max_y = 0
 
-    for y in range(region.height):
-        for x in range(region.width):
-            if region.subImgArr[y][x] == FG_val:
-                if x < min_x:
-                    min_x = x
-                if y < min_y:
-                    min_y = y
-                if x > max_x:
-                    max_x = x
-                if y > max_y:
-                    max_y = y
+def limit_character_vertically(char_region, BG_val):
+    """
+    Find the top and bottom bounds of the character within the region.
+    Returns start_y and height of the actual character.
+    """
+    height = char_region.height
+    width = char_region.width
 
-    # nothing to shrink here...
-    if min_x > max_x or min_y > max_y:
-        return region
+    # Find the first non-empty row from top
+    start_y = 0
+    while start_y < height:
+        empty_row = True
+        for x in range(width):
+            if char_region.subImgArr[start_y][x] != BG_val:
+                empty_row = False
+                break
+        if not empty_row:
+            break
+        start_y += 1
 
-    # create new sub-image region with calculated shrinked dimensions
-    new_startX = region.startX + min_x
-    new_startY = region.startY + min_y
-    new_width = max_x - min_x + 1
-    new_height = max_y - min_y + 1
+    # Find the first non-empty row from bottom
+    end_y = height - 1
+    while end_y >= start_y:
+        empty_row = True
+        for x in range(width):
+            if char_region.subImgArr[end_y][x] != BG_val:
+                empty_row = False
+                break
+        if not empty_row:
+            break
+        end_y -= 1
 
-    return SubImageRegion(new_startX, new_startY, new_width, new_height, region.subImgArr)
+    # Calculate actual character height
+    char_height = end_y - start_y + 1
+
+    # Ensure minimum height
+    if char_height < 2:
+        char_height = 2
+        if start_y + char_height > height:
+            start_y = height - char_height
+
+    return start_y, char_height
+
 
 def split_characters(in_img, width, height, BG_val, FG_val, shrink_chars):
     return_char_matrix = []
@@ -264,6 +293,7 @@ def calc_feature_arr(region, FG_val, features_to_use):
 
     return feature_res_arr
 
+
 def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr, threshold: float):
     norm_curr_arr = []
     norm_ref_arr = []
@@ -305,10 +335,12 @@ def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr, thresh
 
     return False
 
+
 def main(img_in_path: str, img_out_path: str, row: int, col: int, threshold: float, shrink_chars: bool):
     print("OCR")
     myAnalysis = OCRanalysis()
     myAnalysis.run(img_in_path, img_out_path, row, col, threshold, shrink_chars)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OCR Character Matcher")
@@ -316,8 +348,10 @@ if __name__ == "__main__":
     parser.add_argument("--image_in_path", type=str, default="altesTestament_ArialBlack.png", help="Input image path")
     parser.add_argument("--image_out_path", type=str, default="markedChars.png", help="Output image path")
     parser.add_argument("--row", "-r", type=int, default=1, help="Row of target character (0-based) -> default: 1")
-    parser.add_argument("--column", "-c", type=int, default=3, help="Column of target character (0-based) -> default: 3")
-    parser.add_argument("--threshold", "-t", type=float, default=0.999, help="Correlation coefficient limit (confidence) -> default: 0.999")
+    parser.add_argument("--column", "-c", type=int, default=3,
+                        help="Column of target character (0-based) -> default: 3")
+    parser.add_argument("--threshold", "-t", type=float, default=0.999,
+                        help="Correlation coefficient limit (confidence) -> default: 0.999")
     parser.add_argument("--logging", "-l", type=bool, default=False, help="Enable logging -> default: False")
     parser.add_argument("--shrink_chars", "-s", type=bool, default=False, help="Shrink characters -> default: False")
 

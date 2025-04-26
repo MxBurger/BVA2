@@ -112,7 +112,7 @@ class ImageFeatureF_MaxDistanceCentroide(ImageFeatureBase.ImageFeatureBase):
         return max_distance
 
 
-class ImageFeatureF_MaxDistanceCentroide(ImageFeatureBase.ImageFeatureBase):
+class ImageFeatureF_MinDistanceCentroide(ImageFeatureBase.ImageFeatureBase):
     def __init__(self):
         super().__init__()
         self.description = "Maximale Distanz der Pixel zu den Centroiden"
