@@ -1,3 +1,5 @@
+Maximilian Burger 10h
+
 # Mean Shift Clustering for Color Image Segmentation
 
 ## Overview

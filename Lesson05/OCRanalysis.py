@@ -75,7 +75,6 @@ class OCRanalysis:
                     hitCount += 1
                     binary_img_arr = self.mark_region_in_image(binary_img_arr, img_reg, BG_VAL, MARKER_VAL)
 
-        # TODO: printout result image with all the marked letters
         cv2.imwrite("markedChars.png", binary_img_arr)
         print('num of found characters is = ' + str(hitCount))
 
@@ -137,7 +136,9 @@ def split_characters_vertically(row_image, BG_val, FG_val, orig_img):
         end_col = col_idx  # end of the character found
         char_width = end_col - start_col
 
-        if char_width >= 2:          # skip too narrow characters (probably noise)
+        # Skip too narrow characters (probably noise)
+        min_char_width = 2
+        if char_width >= min_char_width:
             char_region = SubImageRegion(
                 row_image.startX + start_col,
                 row_image.startY,
@@ -168,25 +169,25 @@ def split_characters(in_img, width, height, BG_val, FG_val):
         while row_idx < height and not is_empty_row(in_img, width, row_idx, BG_val):
             row_idx += 1
 
-        end_row = row_idx  # Ende der Textzeile gefunden
-
-        # Berechne die Höhe der Textzeile
+        end_row = row_idx  # End of the text line found
         line_height = end_row - start_row
 
-        # Überspringe zu niedrige Zeilen (vermutlich Rauschen)
-        if line_height >= 2:  # Minimale Höhe für eine gültige Textzeile
-            # Extrahiere die Zeile als SubImageRegion
+        min_line_height = 2
+        # Skip too narrow lines (probably noise)
+        if line_height >= min_line_height:
+
+            # Create a sub-image region for the line
             line_region = SubImageRegion(0, start_row, width, line_height, in_img)
 
-            # Zerlege die Zeile in einzelne Zeichen
+            # Split the line into characters
             chars_in_line = split_characters_vertically(line_region, BG_val, FG_val, in_img)
 
-            # Füge die Zeile zur Matrix hinzu, wenn Zeichen gefunden wurden
+            # Add the characters to the return matrix
             if chars_in_line:
                 return_char_matrix.append(chars_in_line)
 
-    lines = len(return_char_matrix)  # Anzahl der gefundenen Zeilen
-    return return_char_matrix, lines
+    line_count = len(return_char_matrix)
+    return return_char_matrix, line_count
 
 
 def calculate_norm_arr(input_regions, FG_val, features_to_use):
