@@ -32,7 +32,7 @@ characters = [
 os.makedirs(out_img_dir, exist_ok=True)
 
 myAnalysis = OCRanalysis()
-threshold = 0.99
+threshold = 0.998
 print(f"OCR Analysis Results with threshold {threshold}:")
 for (row, col, letter, expected_count, out_img_path) in characters:
     full_out_img_path = os.path.join(out_img_dir, out_img_path)

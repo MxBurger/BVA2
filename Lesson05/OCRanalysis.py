@@ -22,8 +22,9 @@ class OCRanalysis:
         self.F_Circularity = 6
         self.F_CentroideRelPosX = 7
         self.F_CentroideRelPosY = 8
+        self.F_HoleCount = 9
 
-    def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float):
+    def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float, shrink_chars: bool):
         img = cv2.imread(img_in_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             print(f"Fehler: Konnte Bild '{img_in_path}' nicht laden.")
@@ -45,16 +46,17 @@ class OCRanalysis:
         features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistY())
         features_to_use.append(ImageFeatures.ImageFeatureF_AvgDistanceCentroide())
         features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistanceCentroide())
-        features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistanceCentroide())
+        features_to_use.append(ImageFeatures.ImageFeatureF_MinDistanceCentroide())
         features_to_use.append(ImageFeatures.ImageFeatureF_Circularity())
         features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosX())
         features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosY())
+        features_to_use.append(ImageFeatures.ImageFeatureF_HoleCount())
 
         log("Starte Zeichenerkennung...")
-        linked_regions, lines = split_characters(binaryImgArr, width, height, BG_VAL, FG_VAL)
-        print(f"Gefundene Zeilen: {lines}")
+        linked_regions, lines = split_characters(binaryImgArr, width, height, BG_VAL, FG_VAL, shrink_chars)
+        log(f"Gefundene Zeilen: {lines}")
         if lines > 0:
-            print(f"Zeichen in 7. Zeile: {len(linked_regions[6]) if linked_regions else 0}")
+            log(f"Zeichen in 7. Zeile: {len(linked_regions[6]) if linked_regions else 0}")
 
         # define the reference character
         charROI = linked_regions[tgtCharRow][tgtCharCol]
@@ -122,7 +124,7 @@ def is_empty_row(in_img, width, row_idx, BG_val):
     return True
 
 
-def split_characters_vertically(row_image, BG_val, FG_val, orig_img):
+def split_characters_vertically(row_image, BG_val, FG_val, orig_img, shrink_chars):
     return_char_arr = []
     height = row_image.height
     width = row_image.width
@@ -155,12 +157,47 @@ def split_characters_vertically(row_image, BG_val, FG_val, orig_img):
                 height,
                 orig_img
             )
-            return_char_arr.append(char_region)
+
+            if shrink_chars:
+                # shrink the character region to only include the actual character
+                shrinked_char_region = shrink_sub_image_region(char_region, FG_val)
+                return_char_arr.append(shrinked_char_region)
+            else:
+                return_char_arr.append(char_region)
 
     return return_char_arr
 
+def shrink_sub_image_region(region, FG_val):
+    min_x = region.width
+    min_y = region.height
+    max_x = 0
+    max_y = 0
 
-def split_characters(in_img, width, height, BG_val, FG_val):
+    for y in range(region.height):
+        for x in range(region.width):
+            if region.subImgArr[y][x] == FG_val:
+                if x < min_x:
+                    min_x = x
+                if y < min_y:
+                    min_y = y
+                if x > max_x:
+                    max_x = x
+                if y > max_y:
+                    max_y = y
+
+    # nothing to shrink here...
+    if min_x > max_x or min_y > max_y:
+        return region
+
+    # create new sub-image region with calculated shrinked dimensions
+    new_startX = region.startX + min_x
+    new_startY = region.startY + min_y
+    new_width = max_x - min_x + 1
+    new_height = max_y - min_y + 1
+
+    return SubImageRegion(new_startX, new_startY, new_width, new_height, region.subImgArr)
+
+def split_characters(in_img, width, height, BG_val, FG_val, shrink_chars):
     return_char_matrix = []
     row_idx = 0
     while row_idx < height:
@@ -189,7 +226,7 @@ def split_characters(in_img, width, height, BG_val, FG_val):
             line_region = SubImageRegion(0, start_row, width, line_height, in_img)
 
             # Split the line into characters
-            chars_in_line = split_characters_vertically(line_region, BG_val, FG_val, in_img)
+            chars_in_line = split_characters_vertically(line_region, BG_val, FG_val, in_img, shrink_chars)
 
             # Add the characters to the return matrix
             if chars_in_line:
@@ -268,10 +305,10 @@ def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr, thresh
 
     return False
 
-def main(img_in_path: str, img_out_path: str, row: int, col: int, threshold: float):
+def main(img_in_path: str, img_out_path: str, row: int, col: int, threshold: float, shrink_chars: bool):
     print("OCR")
     myAnalysis = OCRanalysis()
-    myAnalysis.run(img_in_path, img_out_path, row, col, threshold)
+    myAnalysis.run(img_in_path, img_out_path, row, col, threshold, shrink_chars)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OCR Character Matcher")
@@ -282,7 +319,9 @@ if __name__ == "__main__":
     parser.add_argument("--column", "-c", type=int, default=3, help="Column of target character (0-based) -> default: 3")
     parser.add_argument("--threshold", "-t", type=float, default=0.999, help="Correlation coefficient limit (confidence) -> default: 0.999")
     parser.add_argument("--logging", "-l", type=bool, default=False, help="Enable logging -> default: False")
+    parser.add_argument("--shrink_chars", "-s", type=bool, default=False, help="Shrink characters -> default: False")
 
     args = parser.parse_args()
+
     logging_enabled = args.logging
-    main(args.image_in_path, args.image_out_path, args.row, args.column, args.threshold)
+    main(args.image_in_path, args.image_out_path, args.row, args.column, args.threshold, args.shrink_chars)

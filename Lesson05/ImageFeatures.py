@@ -1,5 +1,10 @@
+import cv2
+import numpy as np
+
 import ImageFeatureBase
 import math
+
+### Basic Features ###
 
 class ImageFeatureF_FGcount(ImageFeatureBase.ImageFeatureBase):
     def __init__(self):
@@ -209,3 +214,39 @@ class ImageFeatureF_CentroideRelPosY(ImageFeatureBase.ImageFeatureBase):
             return 0
 
         return centroid_y / imgRegion.height
+
+### Advanced Features ###
+
+class ImageFeatureF_HoleCount(ImageFeatureBase.ImageFeatureBase):
+    def __init__(self):
+        super().__init__()
+        self.description = "Anzahl der Löcher"
+
+    def CalcFeatureVal(self, imgRegion, FG_val):
+        img = np.zeros((imgRegion.height, imgRegion.width), dtype=np.uint8)
+        # invert image
+        for y in range(imgRegion.height):
+            for x in range(imgRegion.width):
+                if imgRegion.subImgArr[y][x] == FG_val:
+                    img[y, x] = 0
+                else:
+                    img[y, x] = 255
+
+        # find contours and hierarchy
+        contours, hierarchy = cv2.findContours(
+            img,
+            cv2.RETR_CCOMP,  # Hierarchische Konturen: äußere und direkt innere
+            cv2.CHAIN_APPROX_SIMPLE
+        )
+
+        if len(contours) == 0:
+            return 0
+
+        # # count the number of holes (based on the hierarchy)
+        hole_count = 0
+        if hierarchy is not None:
+            for i in range(len(hierarchy[0])):
+                if hierarchy[0][i][3] >= 0: # it is a hole
+                    hole_count += 1
+
+        return hole_count
