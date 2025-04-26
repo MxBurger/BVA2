@@ -1,26 +1,32 @@
 import cv2
 import numpy as np
+import argparse
 
-import ImageFeatureBase
+import ImageFeatures
 from SubImageRegion import SubImageRegion
 
+logging_enabled = False
+
+def log(*string: str):
+    if logging_enabled:
+        print(string)
 
 class OCRanalysis:
     def __init__(self):
         self.F_FGcount = 0
         self.F_MaxDistX = 1
         self.F_MaxDistY = 2
-        # self.F_AvgDistanceCentroide= 3
-        # self.F_MaxDistanceCentroide= 4
-        # self.F_MinDistanceCentroide= 5
-        # self.F_Circularity = 6
-        # self.F_CentroideRelPosX = 7
-        # self.F_CentroideRelPosY = 8
+        self.F_AvgDistanceCentroide= 3
+        self.F_MaxDistanceCentroide= 4
+        self.F_MinDistanceCentroide= 5
+        self.F_Circularity = 6
+        self.F_CentroideRelPosX = 7
+        self.F_CentroideRelPosY = 8
 
-    def run(self, img_path):
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float):
+        img = cv2.imread(img_in_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
-            print(f"Fehler: Konnte Bild '{img_path}' nicht laden.")
+            print(f"Fehler: Konnte Bild '{img_in_path}' nicht laden.")
             return
 
         height, width = img.shape
@@ -34,29 +40,33 @@ class OCRanalysis:
 
         # define the features to evaluate
         features_to_use = []
-        features_to_use.append(ImageFeatureF_FGcount())
-        features_to_use.append(ImageFeatureF_MaxDistX())
-        features_to_use.append(ImageFeatureF_MaxDistY())
+        features_to_use.append(ImageFeatures.ImageFeatureF_FGcount())
+        features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistX())
+        features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistY())
+        features_to_use.append(ImageFeatures.ImageFeatureF_AvgDistanceCentroide())
+        features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistanceCentroide())
+        features_to_use.append(ImageFeatures.ImageFeatureF_MaxDistanceCentroide())
+        features_to_use.append(ImageFeatures.ImageFeatureF_Circularity())
+        features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosX())
+        features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosY())
 
-        print("Starte Zeichenerkennung...")
+        log("Starte Zeichenerkennung...")
         linked_regions, lines = split_characters(binaryImgArr, width, height, BG_VAL, FG_VAL)
         print(f"Gefundene Zeilen: {lines}")
         if lines > 0:
-            print(f"Zeichen in erster Zeile: {len(linked_regions[0]) if linked_regions else 0}")
+            print(f"Zeichen in 7. Zeile: {len(linked_regions[6]) if linked_regions else 0}")
 
         # define the reference character
-        tgtCharRow = 2
-        tgtCharCol = 3
         charROI = linked_regions[tgtCharRow][tgtCharCol]
 
         # test calculate features
-        print('features of reference character is: ')
+        log('features of reference character is: ')
         feature_res_arr = calc_feature_arr(charROI, BG_VAL, features_to_use)
         self.printout_feature_res(feature_res_arr, features_to_use)
 
         # then normalize
         feature_norm_arr = calculate_norm_arr(linked_regions, BG_VAL, features_to_use)
-        print('NORMALIZED features: ')
+        log('NORMALIZED features: ')
         self.printout_feature_res(feature_norm_arr, features_to_use)
 
         # now check all characters and test, if similarity with reference letter is given:
@@ -70,33 +80,32 @@ class OCRanalysis:
             for j in range(len(linked_regions[i])):
                 img_reg = linked_regions[i][j]
                 curr_feature_arr = calc_feature_arr(img_reg, BG_VAL, features_to_use)
-                is_target_char = is_matching_char(curr_feature_arr, feature_res_arr, feature_norm_arr)
+                is_target_char = is_matching_char(curr_feature_arr, feature_res_arr, feature_norm_arr, threshold)
                 if is_target_char:
                     hitCount += 1
                     binary_img_arr = self.mark_region_in_image(binary_img_arr, img_reg, BG_VAL, MARKER_VAL)
 
-        cv2.imwrite("markedChars.png", binary_img_arr)
-        print('num of found characters is = ' + str(hitCount))
+        cv2.imwrite(img_out_path, binary_img_arr)
+        log('num of found characters is = ' + str(hitCount))
+
+        return hitCount
 
     def printout_feature_res(feature_res_arr, features_to_use):
-        print("========== features =========")
+        log("========== features =========")
         for i in range(len(features_to_use)):
-            print("res of F " + str(i) + ", " + features_to_use[i].description + " is " + str(feature_res_arr[i]))
+            log("res of F " + str(i) + ", " + features_to_use[i].description + " is " + str(feature_res_arr[i]))
 
     def mark_region_in_image(self, in_img_arr, img_region, color_to_replace, tgt_color):
-        adjustedColors = 0
         for x in range(img_region.width):
             for y in range(img_region.height):
                 if img_region.subImgArr[y][x] == color_to_replace:
                     in_img_arr[y + img_region.startY][x + img_region.startX] = tgt_color
-                    adjustedColors += 1
-        print('adjusted colors is ' + str(adjustedColors))
         return in_img_arr
 
     def printout_feature_res(self, feature_res_arr, features_to_use):
-        print("========== features =========")
+        log("========== features =========")
         for i in range(len(features_to_use)):
-            print("res of F", i, ",", features_to_use[i].description, "is", feature_res_arr[i])
+            log("res of F", i, ",", features_to_use[i].description, "is", feature_res_arr[i])
 
 
 def is_empty_column(in_img, height, col_idx, BG_val):
@@ -218,10 +227,7 @@ def calc_feature_arr(region, FG_val, features_to_use):
 
     return feature_res_arr
 
-
-def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr):
-    CORR_COEFFICIENT_LIMIT = 0.999
-
+def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr, threshold: float):
     norm_curr_arr = []
     norm_ref_arr = []
 
@@ -257,50 +263,26 @@ def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr):
     else:
         correlation_coefficient = 0  # avoid division by zero
 
-    if correlation_coefficient > CORR_COEFFICIENT_LIMIT:
+    if correlation_coefficient > threshold:
         return True
 
     return False
 
-
-class ImageFeatureF_FGcount(ImageFeatureBase.ImageFeatureBase):
-    def __init__(self):
-        super().__init__()
-        self.description = "Pixelanzahl"
-
-    def CalcFeatureVal(self, imgRegion, FG_val):
-        count = 0
-        for x in range(imgRegion.width):
-            for y in range(imgRegion.height):
-                if imgRegion.subImgArr[y][x] == FG_val:
-                    count += 1
-        return count
-
-
-class ImageFeatureF_MaxDistX(ImageFeatureBase.ImageFeatureBase):
-    def __init__(self):
-        super().__init__()
-        self.description = "maximale Ausdehnung in X-Richtung"
-
-    def CalcFeatureVal(self, imgRegion, FG_val):
-        return imgRegion.width
-
-
-class ImageFeatureF_MaxDistY(ImageFeatureBase.ImageFeatureBase):
-    def __init__(self):
-        super().__init__()
-        self.description = "maximale Ausdehnung in Y-Richtung"
-
-    def CalcFeatureVal(self, imgRegion, FG_val):
-        return imgRegion.height
-
-
-def main():
+def main(img_in_path: str, img_out_path: str, row: int, col: int, threshold: float):
     print("OCR")
-    inImgPath = "altesTestament_ArialBlack.png"
     myAnalysis = OCRanalysis()
-    myAnalysis.run(inImgPath)
-
+    myAnalysis.run(img_in_path, img_out_path, row, col, threshold)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="OCR Character Matcher")
+
+    parser.add_argument("--image_in_path", type=str, default="altesTestament_ArialBlack.png", help="Input image path")
+    parser.add_argument("--image_out_path", type=str, default="markedChars.png", help="Output image path")
+    parser.add_argument("--row", "-r", type=int, default=1, help="Row of target character (0-based) -> default: 1")
+    parser.add_argument("--column", "-c", type=int, default=3, help="Column of target character (0-based) -> default: 3")
+    parser.add_argument("--threshold", "-t", type=float, default=0.999, help="Correlation coefficient limit (confidence) -> default: 0.999")
+    parser.add_argument("--logging", "-l", type=bool, default=False, help="Enable logging -> default: False")
+
+    args = parser.parse_args()
+    logging_enabled = args.logging
+    main(args.image_in_path, args.image_out_path, args.row, args.column, args.threshold)
