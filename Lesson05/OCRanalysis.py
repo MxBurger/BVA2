@@ -25,6 +25,8 @@ class OCRanalysis:
         self.F_CentroideRelPosX = 7
         self.F_CentroideRelPosY = 8
         self.F_HoleCount = 9
+        self.F_VerticalSymmetry = 10
+        self.F_HorizontalSymmetry = 11
 
     def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float,
             shrink_chars: bool):
@@ -54,6 +56,8 @@ class OCRanalysis:
         features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosX())
         features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosY())
         features_to_use.append(ImageFeatures.ImageFeatureF_HoleCount())
+        features_to_use.append(ImageFeatures.ImageFeatureF_VerticalSymmetry())
+        features_to_use.append(ImageFeatures.ImageFeatureF_HorizontalSymmetry())
 
         log("Starte Zeichenerkennung...")
         linked_regions, lines = split_characters(binaryImgArr, width, height, BG_VAL, FG_VAL, shrink_chars)

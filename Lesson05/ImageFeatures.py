@@ -250,3 +250,74 @@ class ImageFeatureF_HoleCount(ImageFeatureBase.ImageFeatureBase):
                     hole_count += 1
 
         return hole_count
+
+# @Lucas be aware, does Symmetry Features are a fuck up, they do more harm then benefit, we should get rid
+# of them
+
+class ImageFeatureF_VerticalSymmetry(ImageFeatureBase.ImageFeatureBase):
+    def __init__(self):
+        super().__init__()
+        self.description = "Vertikale Symmetrie"
+
+    def CalcFeatureVal(self, imgRegion, FG_val):
+        # If the region is empty or has only one column, return 1.0 (perfect symmetry)
+        if imgRegion.width <= 1:
+            return 1.0
+
+        total_pixels = 0
+        matching_pixels = 0
+
+        # Compare left half with right half (mirrored)
+        for y in range(imgRegion.height):
+            for x in range(imgRegion.width // 2):
+                # Calculate the corresponding mirrored x position
+                mirror_x = imgRegion.width - 1 - x
+
+                # Count pixels that have the same value (both FG or both BG)
+                left_pixel = imgRegion.subImgArr[y][x]
+                right_pixel = imgRegion.subImgArr[y][mirror_x]
+
+                total_pixels += 1
+                if left_pixel == right_pixel:
+                    matching_pixels += 1
+
+        # If no pixels were compared, return 0
+        if total_pixels == 0:
+            return 0.0
+
+        # Return the ratio of matching pixels to total pixels
+        return matching_pixels / total_pixels
+
+
+class ImageFeatureF_HorizontalSymmetry(ImageFeatureBase.ImageFeatureBase):
+    def __init__(self):
+        super().__init__()
+        self.description = "Horizontale Symmetrie"
+
+    def CalcFeatureVal(self, imgRegion, FG_val):
+        # If the region is empty or has only one row, return 1.0 (perfect symmetry)
+        if imgRegion.height <= 1:
+            return 1.0
+
+        total_pixels = 0
+        matching_pixels = 0
+
+        # Compare top half with bottom half (mirrored)
+        for x in range(imgRegion.width):
+            for y in range(imgRegion.height // 2):
+                # Calculate the corresponding mirrored y position
+                mirror_y = imgRegion.height - 1 - y
+
+                # Count pixels that have the same value (both FG or both BG)
+                top_pixel = imgRegion.subImgArr[y][x]
+                bottom_pixel = imgRegion.subImgArr[mirror_y][x]
+
+                total_pixels += 1
+                if top_pixel == bottom_pixel:
+                    matching_pixels += 1
+
+        if total_pixels == 0:
+            return 0.0
+
+        # Return the ratio of matching pixels to total pixels
+        return matching_pixels / total_pixels
