@@ -321,3 +321,31 @@ class ImageFeatureF_HorizontalSymmetry(ImageFeatureBase.ImageFeatureBase):
 
         # Return the ratio of matching pixels to total pixels
         return matching_pixels / total_pixels
+
+class ImageFeatureF_AspectRatio(ImageFeatureBase.ImageFeatureBase):
+    def __init__(self):
+        super().__init__()
+        self.description = "Seitenverhältnis ( Breite / Höhe)"
+
+    def CalcFeatureVal(self, imgRegion, FG_val):
+        if imgRegion.height == 0:
+            return 0.0
+
+        return imgRegion.width / imgRegion.height
+
+class ImageFeatureF_PixelDensity(ImageFeatureBase.ImageFeatureBase):
+    def __init__(self):
+        super().__init__()
+        self.description = "Pixeldichte"
+
+    def CalcFeatureVal(self, imgRegion, FG_val):
+        all_pixels = imgRegion.width * imgRegion.height
+        if all_pixels == 0:
+            return 0.0
+
+        # add 1 for every pixel that accepts the condition
+        fg_pixels = sum(1 for y in range(imgRegion.height)
+                            for x in range(imgRegion.width)
+                                if imgRegion.subImgArr[y][x] == FG_val)
+
+        return fg_pixels / all_pixels
