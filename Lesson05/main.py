@@ -102,7 +102,7 @@ print(f"OCR Analysis Results with threshold {threshold}:")
 for (row, col, letter, expected_count, out_img_path) in characters:
     full_out_img_path = os.path.join(out_img_dir, out_img_path)
 
-    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=True)
+    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=False, only_use_simple_features=True)
     result = "OK" if actual_count == expected_count else "ERROR"
     print(f"Letter: \'{letter}\', Expected Count: {expected_count}, Actual Count: {actual_count}, Result: {result}")
 

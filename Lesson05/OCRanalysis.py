@@ -31,7 +31,7 @@ class OCRanalysis:
         self.F_PixelDensity = 13
 
     def run(self, img_in_path: str, img_out_path: str, tgtCharRow: int, tgtCharCol: int, threshold: float,
-            shrink_chars: bool):
+            shrink_chars: bool, only_use_simple_features: bool):
         img = cv2.imread(img_in_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             print(f"Fehler: Konnte Bild '{img_in_path}' nicht laden.")
@@ -57,11 +57,13 @@ class OCRanalysis:
         features_to_use.append(ImageFeatures.ImageFeatureF_Circularity())
         features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosX())
         features_to_use.append(ImageFeatures.ImageFeatureF_CentroideRelPosY())
-        features_to_use.append(ImageFeatures.ImageFeatureF_HoleCount())
-        features_to_use.append(ImageFeatures.ImageFeatureF_VerticalSymmetry())
-        features_to_use.append(ImageFeatures.ImageFeatureF_HorizontalSymmetry())
-        features_to_use.append(ImageFeatures.ImageFeatureF_AspectRatio())
-        features_to_use.append(ImageFeatures.ImageFeatureF_PixelDensity())
+
+        if not only_use_simple_features:
+            features_to_use.append(ImageFeatures.ImageFeatureF_HoleCount())
+            features_to_use.append(ImageFeatures.ImageFeatureF_VerticalSymmetry())
+            features_to_use.append(ImageFeatures.ImageFeatureF_HorizontalSymmetry())
+            features_to_use.append(ImageFeatures.ImageFeatureF_AspectRatio())
+            features_to_use.append(ImageFeatures.ImageFeatureF_PixelDensity())
 
         log("Starte Zeichenerkennung...")
         linked_regions, lines = split_characters(binaryImgArr, width, height, BG_VAL, FG_VAL, shrink_chars)
@@ -344,10 +346,10 @@ def is_matching_char(curr_feature_arr, ref_feature_arr, norm_feature_arr, thresh
     return False
 
 
-def main(img_in_path: str, img_out_path: str, row: int, col: int, threshold: float, shrink_chars: bool):
+def main(img_in_path: str, img_out_path: str, row: int, col: int, threshold: float, shrink_chars: bool, only_use_simple_features: bool):
     print("OCR")
     myAnalysis = OCRanalysis()
-    myAnalysis.run(img_in_path, img_out_path, row, col, threshold, shrink_chars)
+    myAnalysis.run(img_in_path, img_out_path, row, col, threshold, shrink_chars, only_use_simple_features)
 
 
 if __name__ == "__main__":
@@ -355,15 +357,18 @@ if __name__ == "__main__":
 
     parser.add_argument("--image_in_path", type=str, default="altesTestament_ArialBlack.png", help="Input image path")
     parser.add_argument("--image_out_path", type=str, default="markedChars.png", help="Output image path")
-    parser.add_argument("--row", "-r", type=int, default=1, help="Row of target character (0-based) -> default: 1")
+    parser.add_argument("--row", "-r", type=int, default=1,
+                        help="Row of target character (0-based) -> default: 1")
     parser.add_argument("--column", "-c", type=int, default=3,
                         help="Column of target character (0-based) -> default: 3")
     parser.add_argument("--threshold", "-t", type=float, default=0.999,
                         help="Correlation coefficient limit (confidence) -> default: 0.999")
     parser.add_argument("--logging", "-l", type=bool, default=False, help="Enable logging -> default: False")
     parser.add_argument("--shrink_chars", "-s", type=bool, default=False, help="Shrink characters -> default: False")
+    parser.add_argument("--only_use_simple_features", "-u", type=bool, default=False,
+                        help="Use only the first 9 features -> default: False")
 
     args = parser.parse_args()
 
     logging_enabled = args.logging
-    main(args.image_in_path, args.image_out_path, args.row, args.column, args.threshold, args.shrink_chars)
+    main(args.image_in_path, args.image_out_path, args.row, args.column, args.threshold, args.shrink_chars, args.only_use_simple_features)

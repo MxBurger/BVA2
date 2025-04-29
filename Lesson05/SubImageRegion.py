@@ -12,5 +12,4 @@ class SubImageRegion:
                 if 0 <= (y + startY) < len(origImgArr) and 0 <= (x + startX) < len(origImgArr[0]):
                     self.subImgArr[y][x] = origImgArr[y + startY][x + startX]
                 else:
-                    pass
-                    # print(f"Warning: Coordinates ({x + startX}, {y + startY}) are out of bounds for the original image.")
+                    print(f"Warning: Coordinates ({x + startX}, {y + startY}) are out of bounds for the original image.")
