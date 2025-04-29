@@ -215,7 +215,7 @@ The final merged overlay image looks like this:
 
 #### Accuracy
 
-As the high threshold of `0.998` is used, we don't have a single false positive in the shown test set.
+As the high threshold of `0.999` is used, we don't have a single false positive in the shown test set.
 
 Characters like commas, colons, semicolons, and various uppercase letters (`A`, `B`, `D`, `E`, `F`, etc.) were detected with perfect or near-perfect accuracy.
 This indicates that for characters with distinct structural features and less variation in their appearance, the current feature set and similarity threshold are effective.
@@ -232,16 +232,15 @@ So the system propably currently struggles with similar shapes like:
 
 The most extreme character that stands out is `S`. (expected: 8, actual: 1)
 
-There are also specific character combinations that could lead to issues, such as `rt`. For example, combinations where overlapping regions or unclear separations occur could skew the detection. This aspect needs further refinement to ensure robustness.  
-
-
-
-As the bounding boxes are not shrunk in this implemenation, they 
-
 ![](./doc/img/marked_task1/marked_upper_S.png)
 
 This implies that the features for distinguishing between similar upper and lower case shapes may not be robust enough **yet**.
  TODO: korrekten Grund einfügen oder anderes Beispiel
+
+There are also specific character combinations that could lead to issues, such as `rt`.
+Combinations where overlapping regions or unclear separations occur skew the detection. You can see the merged output for `rt` in this figure. The not detected regions that are not marked due to overlapping are outlined with red:
+
+![](./doc/img/merged_overlay_rt_task1.png)
 
 #### Fonts
 
@@ -340,7 +339,7 @@ This is the same like described in [Task 1](#task-1). Now just more features (`o
 Console Output:
 
 ```plaintext
-OCR Analysis Results with threshold 0.998:
+OCR Analysis Results with threshold 0.999:
 Letter: ',', Expected Count: 16, Actual Count: 16, Result: OK
 Letter: '.', Expected Count: 20, Actual Count: 20, Result: OK
 Letter: ':', Expected Count: 8, Actual Count: 8, Result: OK
@@ -386,12 +385,12 @@ Letter: 't', Expected Count: 82, Actual Count: 78, Result: ERROR
 Letter: 'u', Expected Count: 39, Actual Count: 39, Result: OK
 Letter: 'v', Expected Count: 10, Actual Count: 9, Result: ERROR
 Letter: 'w', Expected Count: 25, Actual Count: 24, Result: ERROR
-Letter: 'z', Expected Count: 6, Actual Count: 1, Result: ERROR
+Letter: 'z', Expected Count: 6, Actual Count: 5, Result: ERROR
 Letter: 'ä', Expected Count: 2, Actual Count: 2, Result: OK
 Letter: 'ö', Expected Count: 7, Actual Count: 7, Result: OK
 Letter: 'ü', Expected Count: 7, Actual Count: 7, Result: OK
 Merging images...
-Ergebnisbild gespeichert unter: merged_overlay.png
+Merged image saved at: merged_overlay.png
 ```
 
 The resulting single letter images can be found in [this directory](./doc/img/marked_task2).

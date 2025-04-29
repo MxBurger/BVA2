@@ -5,9 +5,9 @@ import numpy as np
 
 from OCRanalysis import OCRanalysis
 
-img_path = 'altesTestament_ArialBlack.png'
+img_path = 'altesTestament_ArialBlack_corrected.png'
 out_img_dir = "marked/"
-merged_img_path = "doc/img/merged_overlay_rt_task1.png"
+merged_img_path = "merged_overlay.png"
 
 # (row, col, letter, expected_count, image_out_path)
 characters = [
@@ -88,7 +88,7 @@ characters = [
     (0, 42, "w", 25, "marked_lower_w.png"),
     # (0, 0, "x", 0, "marked_x.png"), # no occurrences (so also no template)
     # (0, 0, "y", 0, "marked_y.png"), # no occurrences (so also no template)
-    (9, 12, "z", 6, "marked_lower_z.png"),
+    (19, 0, "z", 6, "marked_lower_z.png"),
     (14, 1, "ä", 2, "marked_lower_ae.png"),
     (5, 31, "ö", 7, "marked_lower_oe.png"),
     (0, 46, "ü", 7, "marked_lower_ue.png"),
@@ -133,12 +133,12 @@ def merge_images(image_files, out_dir, merged_output_path):
 os.makedirs(out_img_dir, exist_ok=True)
 
 myAnalysis = OCRanalysis()
-threshold = 0.998
+threshold = 0.999
 print(f"OCR Analysis Results with threshold {threshold}:")
 for (row, col, letter, expected_count, out_img_path) in characters:
     full_out_img_path = os.path.join(out_img_dir, out_img_path)
 
-    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=False, only_use_simple_features=True)
+    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=True, only_use_simple_features=False)
     result = "OK" if actual_count == expected_count else "ERROR"
     print(f"Letter: \'{letter}\', Expected Count: {expected_count}, Actual Count: {actual_count}, Result: {result}")
 
@@ -147,5 +147,5 @@ print("Merging images...")
 image_files = [f for f in os.listdir(out_img_dir)]
 merge_images(image_files, out_img_dir, merged_img_path)
 
-# temp = ["marked_upper_B.png"]
+# temp = ["marked_lower_r.png", "marked_lower_t.png"]
 # merge_images(temp, out_img_dir, merged_img_path)
