@@ -117,7 +117,7 @@ for (row, col, letter, expected_count, out_img_path) in characters:
     print(f"Letter: \'{letter}\', Expected Count: {expected_count}, Actual Count: {actual_count}, Result: {result}")
 ```
 
-At the end we generate an image with all characters overlapped to see what characters were detected more than once falsely. You can see the file [here](./merged_overlay.png).
+At the end we generate an image with all characters overlapped to see what characters were detected more than once falsely. You can see the file [here](doc/img/merged_overlay_rt_task1.png).
 
 ```python
 image_files = [f for f in os.listdir(out_img_dir)]
@@ -231,6 +231,12 @@ So the system propably currently struggles with similar shapes like:
 - `m`, `n`, `r`
 
 The most extreme character that stands out is `S`. (expected: 8, actual: 1)
+
+There are also specific character combinations that could lead to issues, such as `rt`. For example, combinations where overlapping regions or unclear separations occur could skew the detection. This aspect needs further refinement to ensure robustness.  
+
+
+
+As the bounding boxes are not shrunk in this implemenation, they 
 
 ![](./doc/img/marked_task1/marked_upper_S.png)
 

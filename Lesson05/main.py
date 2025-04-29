@@ -7,7 +7,7 @@ from OCRanalysis import OCRanalysis
 
 img_path = 'altesTestament_ArialBlack.png'
 out_img_dir = "marked/"
-merged_img_path = "merged_overlay.png"
+merged_img_path = "doc/img/merged_overlay_rt_task1.png"
 
 # (row, col, letter, expected_count, image_out_path)
 characters = [
@@ -94,6 +94,42 @@ characters = [
     (0, 46, "ü", 7, "marked_lower_ue.png"),
 ]
 
+def merge_images(image_files, out_dir, merged_output_path):
+    if not image_files:
+        print("No images to merge.")
+        return
+
+    # Load the base image
+    base_image_path = os.path.join(out_dir, image_files[0])
+    result_image = cv2.imread(base_image_path, cv2.IMREAD_GRAYSCALE)
+
+    if result_image is None:
+        print(f"Error: Unable to load base image {base_image_path}")
+        return
+
+    # Merge subsequent images
+    for image_file in image_files[1:]:
+        image_path = os.path.join(out_dir, image_file)
+        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+        if image is None:
+            print(f"Warning: Unable to load image {image_path}. Skipping.")
+            continue
+
+        # Normalize to float for pixel-wise multiplication
+        result_float = result_image.astype(float) / 255.0
+        image_float = image.astype(float) / 255.0
+
+        # Perform overlay operation
+        result_float = result_float * image_float
+
+        # Convert back to uint8
+        result_image = (result_float * 255.0).astype(np.uint8)
+
+    # Save the merged image
+    cv2.imwrite(merged_output_path, result_image)
+    print(f"Merged image saved at: {merged_output_path}")
+
 os.makedirs(out_img_dir, exist_ok=True)
 
 myAnalysis = OCRanalysis()
@@ -107,21 +143,9 @@ for (row, col, letter, expected_count, out_img_path) in characters:
     print(f"Letter: \'{letter}\', Expected Count: {expected_count}, Actual Count: {actual_count}, Result: {result}")
 
 print("Merging images...")
+
 image_files = [f for f in os.listdir(out_img_dir)]
+merge_images(image_files, out_img_dir, merged_img_path)
 
-base_image_path = os.path.join(out_img_dir, image_files[0])
-result_image = cv2.imread(base_image_path, cv2.IMREAD_GRAYSCALE)
-
-for image_file in image_files[1:]:
-    image_path = os.path.join(out_img_dir, image_file)
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-
-    result_float = result_image.astype(float) / 255.0
-    image_float = image.astype(float) / 255.0
-
-    result_float = result_float * image_float
-
-    result_image = (result_float * 255.0).astype(np.uint8)
-
-cv2.imwrite(merged_img_path, result_image)
-print(f"Ergebnisbild gespeichert unter: {merged_img_path}")
+# temp = ["marked_upper_B.png"]
+# merge_images(temp, out_img_dir, merged_img_path)
