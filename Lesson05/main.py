@@ -5,14 +5,13 @@ import numpy as np
 
 from OCRanalysis import OCRanalysis
 
-# img_path = 'altesTestament_ArialBlack.png'
-# img_path = 'test123.png'
-# img_path = 'consolas.png'
-img_path = 'more_bold.png'
-# img_path = 'less_pixels.png'
-# img_path = 'big_picture.png'
+# toggle here to use different images
+img_path = 'altesTestament_ArialBlack.png'
+# img_path = 'inkscape_too_thin.png'
+# img_path = 'inkscape_with_anti_aliasing_and_with_character_spacing.png'
+in_dir = "data/"
 out_img_dir = "marked/"
-merged_img_path = "merged_overlay.png"
+merged_img_path = "merged.png"
 
 # (row, col, letter, expected_count, image_out_path)
 characters = [
@@ -105,15 +104,15 @@ brainrot_characters = [
     (0, 2, "a", 35, "marked_lower_a.png"),
     (0, 3, "l", 16, "marked_lower_l.png"),
     (0, 4, "i", 23, "marked_lower_i.png"),
-    (0, 5, "n", 21, "marked_lower_n.png"),
-    (0, 6, "B", 1, "marked_upper_B.png"),
-    (0, 7, "r", 22, "marked_lower_r.png"),
-    (0, 12, "o", 23, "marked_lower_o.png"),
-    (0, 14, ",", 5, "marked_comma.png"),
-    (0, 17, "s", 24, "marked_lower_s.png"),
-    (0, 19, "k", 2, "marked_lower_k.png"),
+    (0, 6, "n", 21, "marked_lower_n.png"),
+    (0, 7, "B", 1, "marked_upper_B.png"),
+    (0, 8, "r", 22, "marked_lower_r.png"),
+    (0, 13, "o", 23, "marked_lower_o.png"),
+    (0, 15, ",", 5, "marked_comma.png"),
+    (1, 0, "s", 24, "marked_lower_s.png"),
+    (0, 20, "k", 2, "marked_lower_k.png"),
     (3, 0, "w", 3, "marked_lower_w.png"),
-    (0, 26, "A", 4, "marked_upper_A.png"),
+    (7, 0, "A", 4, "marked_upper_A.png"),
     (1, 7, "f", 4, "marked_lower_f.png"),
     (6, 1, "y", 6, "marked_lower_y.png"),
     (2, 5, "d", 7, "marked_lower_d.png"),
@@ -172,10 +171,11 @@ os.makedirs(out_img_dir, exist_ok=True)
 myAnalysis = OCRanalysis()
 threshold = 0.999
 print(f"OCR Analysis Results with threshold {threshold}:")
-for (row, col, letter, expected_count, out_img_path) in brainrot_characters:
+for (row, col, letter, expected_count, out_img_path) in characters:
+    full_in_img_path = os.path.join(in_dir, img_path)
     full_out_img_path = os.path.join(out_img_dir, out_img_path)
 
-    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=True, only_use_simple_features=False)
+    actual_count = myAnalysis.run(full_in_img_path, full_out_img_path, row, col, threshold, shrink_chars=False, only_use_simple_features=True)
     result = "OK" if actual_count == expected_count else "ERROR"
     print(f"Letter: \'{letter}\', Expected Count: {expected_count}, Actual Count: {actual_count}, Result: {result}")
 
