@@ -14,7 +14,7 @@ _Lucas Hünniger_
   - [Implementation](#implementation-1)
   - [Testing](#testing-1)
   - [Test Run](#test-run-1)
-  - [Interpreations & Limitations](#interpreations--limitations-1)
+  - [Discussion](#discussion)
 
 ## Task 1
 
@@ -38,7 +38,7 @@ For the binarization, the image is converted to binary (black / white) using som
 > Showing the code examples here would be a bit overwhelming. Just look in [OCRanalysis.py](./OCRanalysis.py).
 
 To separate the text lines, the whole image is analyzed horizontally to identify text lines by detecting rows of foreground pixels.
-If no foreground pixel is found, we have to create a new line. This behaviour is defined in the function `split_characters()`.
+If no foreground pixel is found, a new line is created. This behaviour is defined in the function `split_characters()`.
 
 Using the Fire-Through technique, the single lines are then further splitted in to characters. This is defined in the function `split_characters_vertically()`. 
 
@@ -65,9 +65,8 @@ class SubImageRegion:
 
 > Showing the code examples here would be a bit overwhelming. Just look in [ImageFeatures.py](./ImageFeatures.py).
 
-TODO: maybe explain some selected features like Circularity a bit more + add code?
-
-Like said in the task, we just implemented each feature that was outcommented. All the features can be found in [ImageFeatures.py](./ImageFeatures.py). In this task, the following features were used:
+##### Overview
+Like said in the task, each feature that was outcommented is now implemented. All the features can be found in [ImageFeatures.py](./ImageFeatures.py). In this task, the following features were used:
 - Pixel Count: Total number of foreground pixels
 - Maximum X/Y Dimensions: Width and height of the character region
 - Centroid-Based Measurements:
@@ -76,6 +75,44 @@ Like said in the task, we just implemented each feature that was outcommented. A
   - Minimum distance of pixels to the centroid
 - Character Circularity: Measurement of how circular the character shape is
 - Relative Centroid Positions: Position of the character's center relative to its bounding box
+
+##### A basic feature in depth: Circularity
+The circularity feature quantifies how closely a character's shape resembles a perfect circle.
+This measurement is particularly valuable for distinguishing between round characters
+(like 'o', 'O', 'c', 'e') and angular characters (like 'n', 'z', 'v', 'w').
+
+Mathematical Definition
+Circularity is defined mathematically as:
+$
+\text{Circularity} = \frac{4\pi \times \text{Area}}{\text{Perimeter}^2}
+$
+
+This formula produces a value between 0 and 1, where:
+
+1.0 represents a perfect circle
+Values approaching 0 indicate irregular shapes.
+
+###### Algorithm explanation
+
+The algorithm calculates circularity through the following steps:
+
+- Area Calculation:
+  - Count the total number of foreground pixels in the character region
+  - This provides the area measurement
+
+- Perimeter Calculation:
+  - Identify boundary pixels by checking if any of their 8 neighboring pixels is a background pixel
+  - A pixel is considered to be on the boundary if:
+    - It is a foreground pixel, AND
+    - At least one of its 8 neighbors is a background pixel OR is outside the region bounds
+  - Count the total number of boundary pixels to determine the perimeter
+
+- Circularity Computation:
+  - Apply the formula: `4π × Area / Perimeter²`
+  - Return the calculated value as the circularity feature
+
+The circularity feature provides benefits for OCR because it provides different information than
+aspect ratio or centroid-based features.
 
 #### Reference Character Selection
 
@@ -112,34 +149,60 @@ During the test run each result of a character analyzation is printed with the d
 for (row, col, letter, expected_count, out_img_path) in characters:
     full_out_img_path = os.path.join(out_img_dir, out_img_path)
 
-    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=True)
+    actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=False, only_use_simple_features=True)
     result = "OK" if actual_count == expected_count else "ERROR"
     print(f"Letter: \'{letter}\', Expected Count: {expected_count}, Actual Count: {actual_count}, Result: {result}")
 ```
 
-At the end we generate an image with all characters overlapped to see what characters were detected more than once falsely. You can see the file [here](doc/img/merged_overlay_rt_task1.png).
+At the end an image is generated with all characters overlapped to see what characters were detected more
+than once falsely. You can see the file [here](doc/img/merged_overlay_rt_task1.png).
+
+```python
+def merge_images(image_files, out_dir, merged_output_path):
+    if not image_files:
+        print("No images to merge.")
+        return
+
+    # Load the base image
+    base_image_path = os.path.join(out_dir, image_files[0])
+    result_image = cv2.imread(base_image_path, cv2.IMREAD_GRAYSCALE)
+
+    if result_image is None:
+        print(f"Error: Unable to load base image {base_image_path}")
+        return
+
+    # Merge subsequent images
+    for image_file in image_files[1:]:
+        image_path = os.path.join(out_dir, image_file)
+        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+        if image is None:
+            print(f"Warning: Unable to load image {image_path}. Skipping.")
+            continue
+
+        # Normalize to float for pixel-wise multiplication
+        result_float = result_image.astype(float) / 255.0
+        image_float = image.astype(float) / 255.0
+
+        # Perform overlay operation
+        result_float = result_float * image_float
+
+        # Convert back to uint8
+        result_image = (result_float * 255.0).astype(np.uint8)
+
+    # Save the merged image
+    cv2.imwrite(merged_output_path, result_image)
+    print(f"Merged image saved at: {merged_output_path}")
+```
+
+So now just all images can be merged together like this:
 
 ```python
 image_files = [f for f in os.listdir(out_img_dir)]
-
-base_image_path = os.path.join(out_img_dir, image_files[0])
-result_image = cv2.imread(base_image_path, cv2.IMREAD_GRAYSCALE)
-
-for image_file in image_files[1:]:
-    image_path = os.path.join(out_img_dir, image_file)
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-
-    result_float = result_image.astype(float) / 255.0
-    image_float = image.astype(float) / 255.0
-
-    result_float = result_float * image_float
-
-    result_image = (result_float * 255.0).astype(np.uint8)
-
-cv2.imwrite(merged_img_path, result_image)
+merge_images(image_files, out_img_dir, merged_img_path)
 ```
 
-For running the test for task 1 just set the following flags:
+For running the test for task 1 just adjust the code when executing [main.py](./main.py) or set the following flags when executing [OCRAnalysis.py](./OCRanalysis.py) from the CLI:
 
 ```python
 shrink_chars=False
@@ -151,7 +214,7 @@ only_use_simple_features=True
 Console Output:
 
 ```plaintext
-OCR Analysis Results with threshold 0.998:
+OCR Analysis Results with threshold 0.999:
 Letter: ',', Expected Count: 16, Actual Count: 16, Result: OK
 Letter: '.', Expected Count: 20, Actual Count: 18, Result: ERROR
 Letter: ':', Expected Count: 8, Actual Count: 8, Result: OK
@@ -197,12 +260,10 @@ Letter: 't', Expected Count: 82, Actual Count: 74, Result: ERROR
 Letter: 'u', Expected Count: 39, Actual Count: 37, Result: ERROR
 Letter: 'v', Expected Count: 10, Actual Count: 7, Result: ERROR
 Letter: 'w', Expected Count: 25, Actual Count: 21, Result: ERROR
-Letter: 'z', Expected Count: 6, Actual Count: 1, Result: ERROR
+Letter: 'z', Expected Count: 6, Actual Count: 5, Result: ERROR
 Letter: 'ä', Expected Count: 2, Actual Count: 2, Result: OK
 Letter: 'ö', Expected Count: 7, Actual Count: 4, Result: ERROR
 Letter: 'ü', Expected Count: 7, Actual Count: 7, Result: OK
-Merging images...
-Ergebnisbild gespeichert unter: merged_overlay.png
 ```
 
 The resulting single letter images can be found in [this directory](./doc/img/marked_task1).
@@ -215,7 +276,9 @@ The final merged overlay image looks like this:
 
 #### Accuracy
 
-As the high threshold of `0.999` is used, we don't have a single false positive in the shown test set.
+> Which letters can be detected in a confident way and which letters lead to problems – and why?
+
+As the high threshold of `0.999` is used, there is not a single false positive in the shown test set.
 
 Characters like commas, colons, semicolons, and various uppercase letters (`A`, `B`, `D`, `E`, `F`, etc.) were detected with perfect or near-perfect accuracy.
 This indicates that for characters with distinct structural features and less variation in their appearance, the current feature set and similarity threshold are effective.
@@ -230,31 +293,50 @@ So the system propably currently struggles with similar shapes like:
 - `c`, `e`, `o` or
 - `m`, `n`, `r`
 
-The most extreme character that stands out is `S`. (expected: 8, actual: 1)
+One of the most extreme character that stands out is `S`. (expected: 8, actual: 1)
 
 ![](./doc/img/marked_task1/marked_upper_S.png)
 
-This implies that the features for distinguishing between similar upper and lower case shapes may not be robust enough **yet**.
- TODO: korrekten Grund einfügen oder anderes Beispiel
+This implies that the features for distinguishing between similar upper and lower case shapes (in this case `s` and `S`) may not be robust enough **yet**. This will be potentially improved by using the aspect ratio after shrinking the actual bounding boxes. [see here](#further-additional-features)
 
-There are also specific character combinations that could lead to issues, such as `rt`.
+There are also specific character combinations that are connected in the sample image. (possibly to "simulate" fonts with connected letters) You can find every connected letter in [this directory](./doc/img/connected_letters). On example is the 
+
+
+that lead to issues, such as `rt`.
 Combinations where overlapping regions or unclear separations occur skew the detection. You can see the merged output for `rt` in this figure. The not detected regions that are not marked due to overlapping are outlined with red:
 
 ![](./doc/img/merged_overlay_rt_task1.png)
 
 #### Fonts
 
+> Are all fonts applicable to this kind of OCR strategy – why or why not?
+
 Not all fonts are applicable. In this case, the OCR is optimized for handling the font used in the given image.
-Other fonts could lead to accuracy or general detection problems due to e. g. serifs or other decorative elements.
-Another problem would italic or other changed forms of characters as the bounding boxes would be misleading when implementing features like e. g. Aspect Ration.
+
+Other fonts could lead to accuracy or general detection problems due to e. g.:
+* serifs (leads to connected characters)
+* italic font styles (vertical splitting could become problematic and the aspect ratios are modified)
+* weight (too bold = characters possibly are merging; too thin = characters may disappear during binarization)
+* variable stroke widths and font consistency ( ; see Times New Roman)
+* character distinctiveness (when differentiating letters is hard; e. g. `l` vs. `I`)
+* ...
 
 #### Other Character Dependency
 
-The accuracy of the classification can depend on the characters in the same line. 
-You can see this when letters merge like e. g.
+> Does classification accuracy depend on the other characters in the specific line – if that’s the case: why and how to overcome this issue?
 
-TODO: Beispiele hinzufügen....
+Yes, classification accuracy definitely depends on other characters within the same line.
+The implementation uses the `split_characters_vertically` function to identify character boundaries within each line.
+When characters are positioned closely together or have specific combinations (like "rt"),
+segmentation can be imperfect. The approach relies on finding empty columns between characters, which may not
+exist when characters touch or overlap. Also, when characters aren't properly segmented, features calculated for these
+regions become distorted. E.g. a joined "rt" will have different circularity, aspect ratio, and centroid-based measurements
+than individual 'r' and 't'.
 
+Imrovement ideas:
+- Better character segmentation (Contour Analysis, Watershed, ...)
+- Sliding Window approach (scan from left to right over the character sequence and classify the most probable sequence)
+- Junction Detection to identify and handle character junctions where segmentation is challenging.
 
 ## Task 2
 
@@ -264,7 +346,7 @@ TODO: Beispiele hinzufügen....
 
 Region shrinking is used to enhance the accuracy of character detection by adjusting the bounding box to closely match the edges of the actual character. This step eliminates unnecessary white space around characters.
 
-For this a flag `--shrink_chars` as well as the function `limit_characters_vertically()` was introduced in [OCRanalysis.py](./OCRanalysis.py). If the flag is not set to true, we won't shrink the chars.
+For this a flag `--shrink_chars` as well as the function `limit_characters_vertically()` was introduced in [OCRanalysis.py](./OCRanalysis.py). If the flag is not set to true, the characters won't be shrunk.
 
 What is done:
 1. The first non empty rows from top and buttom are searched.
@@ -399,13 +481,68 @@ The final merged overlay image looks like this:
 
 ![](./doc/img/merged_overlay_task2.png)
 
+##### Discussion
+###### Ensure that the split characters image region is shrinked to its bounding box. How can that help to improve result quality?
 
-### Interpreations & Limitations
+The implementation includes the `limit_character_vertically` function to shrink character regions to their actual bounding boxes.
+This improves result quality in several ways:
+- More Accurate Feature Measurements: When characters are tightly bounded, features like aspect ratio, circularity,
+and pixel density reflect the actual character shape rather than being diluted by excess background space.
+- Better Feature Differentiation: Characters like 'i' and 'l' have distinct height-to-width ratios, but this distinction
+becomes much clearer when extra vertical whitespace is removed.
+- Improved Centroid Calculations: The centroid position becomes more representative of the character's true center of mass,
+  making centroid-based features (average/max/min distance) more descriptive.
+- Consistent Scale for Comparison: Characters with the same actual shape but different surrounding whitespace
+ (due to segmentation variations) now produce more similar feature vectors.
 
-TODO: fehlt leider noch komplett -> Lucas müde sein doll
+In the test results, shrinking enabled perfect recognition for many characters that were previously misclassified,
+like uppercase 'G' (improving from 19/23 to 23/23 correct) and some lowercase letters.
+The letter 'S'/'s' benefits especially from character shrinking and additional features. Shrinking enabled accurate measurement
+of the proportions of the shape of 'S'/'s'. The shapes also have a specific aspect ratio when properly bounded.
+This lead to following observations:
+- Uppercase 'S': Improved from 1/8 correct (12.5%) to 8/8 correct (100%)
+- Lowercase 's': Improved from 85/102 correct (83.3%) to 102/102 correct (100%)
 
-#### Normalization Process
+###### Discuss the normalization process – how does character occurrence probability influence the results?
 
-#### Classification Process
+The normalization process calculates average feature values across all character regions and uses these averages
+to normalize individual feature measurements. This approach is influenced by character occurrence probability in these ways:
+- Frequency Bias: Frequently occurring characters (like 'e', which appears 169 times) have a greater influence on the average
+  values than rare characters (like 'Z', which appears only once).
+- Statistical Reliability: Features that remain stable across different instances of the same character (like hole count)
+    will be more reliably normalized than features with high variance.
+- Outlier Impact: Rare characters with unusual feature values may be disadvantaged in the comparison
+  because their features will be normalized against averages dominated by common characters.
 
-#### Correlation between features
+##### Discuss how the classification process itself could be improved. Are there better strategies for feature-based classification?
+During the implementation, several improvement ideas were discussed:
+- Feature Weighting: Not all features are equally discriminative. Assigning weights to features based on their discriminative power could improve results.
+For example, hole count might be more decisive than pixel count.
+- Machine Learning Classifiers: Using classifiers like Random Forests or Neural Networks could
+learn optimal feature combinations and decision boundaries.
+- Multi-Stage Classification: First separate characters into broad categories (e.g., circular vs. angular, with holes vs. without)
+then refine with detailed comparison.
+- Template Matching Hybrid: Combine feature-based approach with template matching for ambiguous cases (e.g., distinguish 't' and
+'r' using both features and cross-correlation).
+- Dynamic Thresholds: Adjust the correlation threshold based on the specific reference character or character category
+rather than using a fixed threshold.
+
+>Incorporating language knowledge and contextual information from neighboring characters can also improve OCR classification,
+although there we are leaving the field of feature-based classification.
+
+##### How does correlation of some of the features itself influence the achievable classification results (e.g. max-distance-from-centroid will somehow be correlated to the specific width)?
+
+The implementation uses features that are correlated. As already stated in the question, the maximum distance
+from centroid is naturally correlated with the character's width or height. This means these features partially
+duplicate information. The correlation between features impacts classification in at least three ways:
+
+- Redundant Information: Correlated features essentially count the same characteristic multiple times in the
+comparison, giving it disproportionate weight.
+- Dimensionality Issues: With correlated features, the 14-dimensional feature vector effectively has lower
+"true" dimensionality, making some character distinctions harder.
+- Noise Amplification: If a character varies in one feature (e.g., width), correlated features will also vary,
+amplifying the deviation in the feature vector.
+
+The improvement between Task 1 and Task 2 suggests that despite these correlations, the additional features still contribute
+valuable new information, especially hole count and symmetry measurements that provide information not captured by the
+basic dimensional features.

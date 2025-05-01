@@ -5,7 +5,12 @@ import numpy as np
 
 from OCRanalysis import OCRanalysis
 
-img_path = 'altesTestament_ArialBlack_corrected.png'
+# img_path = 'altesTestament_ArialBlack.png'
+# img_path = 'test123.png'
+# img_path = 'consolas.png'
+img_path = 'more_bold.png'
+# img_path = 'less_pixels.png'
+# img_path = 'big_picture.png'
 out_img_dir = "marked/"
 merged_img_path = "merged_overlay.png"
 
@@ -94,6 +99,38 @@ characters = [
     (0, 46, "ü", 7, "marked_lower_ue.png"),
 ]
 
+brainrot_characters = [
+    (0, 0, "I", 6, "marked_upper_I.png"),
+    (0, 1, "t", 30, "marked_lower_t.png"),
+    (0, 2, "a", 35, "marked_lower_a.png"),
+    (0, 3, "l", 16, "marked_lower_l.png"),
+    (0, 4, "i", 23, "marked_lower_i.png"),
+    (0, 5, "n", 21, "marked_lower_n.png"),
+    (0, 6, "B", 1, "marked_upper_B.png"),
+    (0, 7, "r", 22, "marked_lower_r.png"),
+    (0, 12, "o", 23, "marked_lower_o.png"),
+    (0, 14, ",", 5, "marked_comma.png"),
+    (0, 17, "s", 24, "marked_lower_s.png"),
+    (0, 19, "k", 2, "marked_lower_k.png"),
+    (3, 0, "w", 3, "marked_lower_w.png"),
+    (0, 26, "A", 4, "marked_upper_A.png"),
+    (1, 7, "f", 4, "marked_lower_f.png"),
+    (6, 1, "y", 6, "marked_lower_y.png"),
+    (2, 5, "d", 7, "marked_lower_d.png"),
+    (1, 1, "e", 36, "marked_lower_e.png"),
+    (2, 6, "m", 12, "marked_lower_m.png"),
+    (3, 8, "c", 13, "marked_lower_c.png"),
+    (5, 3, "p", 7, "marked_lower_p.png"),
+    (3, 27, "u", 4, "marked_lower_u.png"),
+    (3, 3, "h", 11, "marked_lower_h.png"),
+    (5, 22, ".", 2, "marked_dot.png"),
+    (7, 2, "v", 4, "marked_lower_v.png"),
+    (6, 18, "-", 3, "marked_dash.png"),
+    (7, 27, "'", 1, "marked_apostrophe.png"),
+    (7, 13, "g", 4, "marked_lower_g.png"),
+    (5, 23, "T", 1, "marked_upper_T.png")
+]
+
 def merge_images(image_files, out_dir, merged_output_path):
     if not image_files:
         print("No images to merge.")
@@ -135,7 +172,7 @@ os.makedirs(out_img_dir, exist_ok=True)
 myAnalysis = OCRanalysis()
 threshold = 0.999
 print(f"OCR Analysis Results with threshold {threshold}:")
-for (row, col, letter, expected_count, out_img_path) in characters:
+for (row, col, letter, expected_count, out_img_path) in brainrot_characters:
     full_out_img_path = os.path.join(out_img_dir, out_img_path)
 
     actual_count = myAnalysis.run(img_path, full_out_img_path, row, col, threshold, shrink_chars=True, only_use_simple_features=False)

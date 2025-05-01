@@ -72,7 +72,11 @@ class OCRanalysis:
             log(f"Zeichen in 7. Zeile: {len(linked_regions[6]) if linked_regions else 0}")
 
         # define the reference character
-        charROI = linked_regions[tgtCharRow][tgtCharCol]
+        try:
+            charROI = linked_regions[tgtCharRow][tgtCharCol]
+        except Exception as e:
+            print(f"Character at position [{tgtCharRow}, {tgtCharCol}] is not recognized or out of bounds: {str(e)}")
+            return -1
 
         # test calculate features
         log('features of reference character is: ')
