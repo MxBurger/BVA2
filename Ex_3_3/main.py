@@ -364,14 +364,13 @@ class WienerFilter:
         plt.show()
 
 
-# Example usage
+
 if __name__ == "__main__":
     # Create Wiener filter instance
     wf = WienerFilter()
 
-    image_path = "bva.png"
+    image_path = ""
 
-    # Run demonstration
     wf.demonstrate_restoration(image_path)
 
     # Visualize frequency responses
