@@ -271,3 +271,4 @@ where:
 ![diagonal_kernel_size_butterworth.png](img/diagonal_and_butterworth.png)
 ![diagonal_and_butterworth.png](img/boat/diagonal_and_butterworth.png)
 
+## Advanced Implementation
