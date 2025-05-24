@@ -194,7 +194,6 @@ as the test results clearly show.
 ![vertical.png](img/boat/vertical.png)
 ![diagonal.png](img/boat/diagonal.png)
 
-> TODO: Add more test images
 > TODO: Discuss the results
 
 #### Additional approach with additional Butterworth-Filter `butterworth_filter`
