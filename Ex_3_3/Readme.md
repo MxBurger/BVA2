@@ -8,15 +8,50 @@ $$
 g(x,y) = f(x,y) * h(x,y) + n(x,y)
 $$
 where:
-- $f(x,y)$ is the original image
 - $g(x,y)$ is the observed image
+- $f(x,y)$ is the original image
 - $h(x,y)$ is the blurring function
 - $n(x,y)$ is the noise
 - $*$ is the convolution operator
 
-> TODO: Add basic flow chart of the Wiener Filter
 
-### Methods
+```mermaid
+graph LR
+A[original image] --> B[blur image]
+B --> C[add noise]
+```
+
+The Wiener filter now aims to estimate the original image $f(x,y)$ from the observed image $g(x,y)$ by
+inverting the degradation process. The Wiener filter is defined as:
+$$
+W(u,v) = \frac{H^*(u,v)}{|H(u,v)|^2 + K}
+$$
+where:
+- $W(u,v)$ is the Wiener filter in the frequency domain
+- $H(u,v)$ is the Fourier transform of the degradation function
+- $H^*(u,v)$ is the complex conjugate of $H(u,v)$
+- $K$ is a regularization parameter (often related to the noise level)
+
+After computing the Wiener filter, it can be applied in the frequency domain to the degraded image:
+$$
+F'(u,v) = W(u,v) * G(u,v)
+$$
+where:
+- $F'(u,v)$ is the restored image in the frequency domain
+- $W(u,v)$ is the Wiener filter
+- $G(u,v)$ is the Fourier transform of the degraded image
+
+
+Finally, the inverse Fourier transform is applied to obtain the restored image in the spatial domain:
+$$
+f(x,y) = \mathcal{F}^{-1}(F'(u,v))
+$$
+
+
+
+
+
+### Implementation
 
 #### Methods for degrading the image
 
@@ -153,11 +188,11 @@ as the test results clearly show.
 ![vertical.png](img/vertical.png)
 ![diagonal.png](img/diagonal.png)
 
-![mean.png](img/lena/mean.png)
-![gauss.png](img/lena/gauss.png)
-![horizontal.png](img/lena/horizontal.png)
-![vertical.png](img/lena/vertical.png)
-![diagonal.png](img/lena/diagonal.png)
+![mean.png](img/boat/mean.png)
+![gauss.png](img/boat/gauss.png)
+![horizontal.png](img/boat/horizontal.png)
+![vertical.png](img/boat/vertical.png)
+![diagonal.png](img/boat/diagonal.png)
 
 > TODO: Add more test images
 > TODO: Discuss the results
@@ -195,8 +230,8 @@ where:
 ![vertical.png](img/vertical_butterworth.png)
 ![diagonal_butterworth.png](img/diagonal_butterworth.png)
 
-![mean.png](img/lena/mean_butterworth.png)
-![gauss.png](img/lena/gauss_butterworth.png)
-![horizontal.png](img/lena/horizontal_butterworth.png)
-![vertical.png](img/lena/vertical_butterworth.png)
-![diagonal.png](img/lena/diagonal_butterworth.png)
+![mean.png](img/boat/mean_butterworth.png)
+![gauss.png](img/boat/gauss_butterworth.png)
+![horizontal.png](img/boat/horizontal_butterworth.png)
+![vertical.png](img/boat/vertical_butterworth.png)
+![diagonal.png](img/boat/diagonal_butterworth.png)
