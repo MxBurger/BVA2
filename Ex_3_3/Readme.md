@@ -131,7 +131,32 @@ restored = np.fft.ifft2(F_estimate)
 restored = np.real(restored)
 ```
 
-#### Additional approach Butterworth-Filter `butterworth_filter`
+
+### Test-Pictures
+
+To quantify the results, the PSNR (Peak Signal-to-Noise Ratio) is used. The PSNR is defined as:
+$$
+PSNR = 10 \cdot \log_{10} \left( \frac{MAX^2}{MSE} \right)
+$$
+where:
+- $MAX$ is the maximum possible pixel value (255 for 8-bit images)
+- $MSE$ is the mean squared error between the original and restored images
+
+A higher PSNR value indicates a better restoration quality
+-> better mathematical similarity to the original image.
+Be aware that mathematical similarity does not always mean subjective visual similarity,
+as the test results clearly show.
+
+![mean.png](img/mean.png)
+![gauss.png](img/gauss.png)
+![horizontal.png](img/horizontal.png)
+![vertical.png](img/vertical.png)
+![diagonal.png](img/diagonal.png)
+
+> TODO: Add more test images
+> TODO: Discuss the results
+
+#### Additional approach with additional Butterworth-Filter `butterworth_filter`
 For additional filtering, a Butterworth Lowpass-filter can be applied to the restored image.
 
 The Butterworth filter is defined as:
@@ -157,13 +182,9 @@ where:
 - $W$ is the Wiener filter
 - $B$ is the Butterworth filter
 
-
-> TODO: Disclaimer that this is not always best approach.
-
-
 ### Test-Pictures
-![mean.png](img/mean.png)
-![gauss.png](img/gauss.png)
-![horizontal.png](img/horizontal.png)
-![vertical.png](img/vertical.png)
-![diagonal.png](img/diagonal.png)
+![mean_butterworth.png](img/mean_butterworth.png)
+![gauss_butterworth.png](img/gauss_butterworth.png)
+![horizontal_butterworth.png](img/horizontal_butterworth.png)
+![vertical.png](img/vertical_butterworth.png)
+![diagonal_butterworth.png](img/diagonal_butterworth.png)
