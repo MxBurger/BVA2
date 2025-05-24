@@ -388,7 +388,7 @@ if __name__ == "__main__":
     # Create Wiener filter instance
     wf = WienerFilter()
 
-    image_path = ""
+    image_path = "lena_small.png"
 
     wf.demonstrate_restoration(image_path)
 

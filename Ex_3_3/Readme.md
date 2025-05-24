@@ -153,6 +153,12 @@ as the test results clearly show.
 ![vertical.png](img/vertical.png)
 ![diagonal.png](img/diagonal.png)
 
+![mean.png](img/lena/mean.png)
+![gauss.png](img/lena/gauss.png)
+![horizontal.png](img/lena/horizontal.png)
+![vertical.png](img/lena/vertical.png)
+![diagonal.png](img/lena/diagonal.png)
+
 > TODO: Add more test images
 > TODO: Discuss the results
 
@@ -188,3 +194,9 @@ where:
 ![horizontal_butterworth.png](img/horizontal_butterworth.png)
 ![vertical.png](img/vertical_butterworth.png)
 ![diagonal_butterworth.png](img/diagonal_butterworth.png)
+
+![mean.png](img/lena/mean_butterworth.png)
+![gauss.png](img/lena/gauss_butterworth.png)
+![horizontal.png](img/lena/horizontal_butterworth.png)
+![vertical.png](img/lena/vertical_butterworth.png)
+![diagonal.png](img/lena/diagonal_butterworth.png)
