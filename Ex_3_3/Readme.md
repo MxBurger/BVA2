@@ -32,6 +32,11 @@ where:
 - $H^*(u,v)$ is the complex conjugate of $H(u,v)$
 - $K$ is a regularization parameter (often related to the noise level)
 
+> The regularization parameter $K$ represents the noise-to-signal power ratio and controls the trade-off between noise
+> suppression and detail preservation. When $K$ is small (approaching 0), the filter behaves more like an inverse filter,
+>attempting to restore fine details but potentially amplifying noise. When $K$ is large, the filter becomes more aggressive,
+>suppressing noise effectively but at the cost of losing high-frequency details and making the image appear smoother or blurred.
+
 After computing the Wiener filter, it can be applied in the frequency domain to the degraded image:
 $$
 F'(u,v) = W(u,v) * G(u,v)
