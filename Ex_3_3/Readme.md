@@ -47,10 +47,6 @@ $$
 f(x,y) = \mathcal{F}^{-1}(F'(u,v))
 $$
 
-
-
-
-
 ### Implementation
 
 #### Methods for degrading the image
@@ -78,8 +74,8 @@ For sigma 1/3 of the kernel size will be used.
 ###### Motion Blur
 - **Horizontal**: Only the middle row of the kernel contains non-zero values.
 ```python
-kernels['horizontal.png'] = np.zeros((kernel_size, kernel_size))
-kernels['horizontal.png'][kernel_size // 2, :] = 1.0 / kernel_size
+kernels['horizontal'] = np.zeros((kernel_size, kernel_size))
+kernels['horizontal'][kernel_size // 2, :] = 1.0 / kernel_size
 ```
 - **Vertical**: Only the middle column of the kernel contains non-zero values.
 ```python
@@ -182,17 +178,42 @@ A higher PSNR value indicates a better restoration quality
 Be aware that mathematical similarity does not always mean subjective visual similarity,
 as the test results clearly show.
 
-![mean.png](img/mean.png)
-![gauss.png](img/gauss.png)
-![horizontal.png](img/horizontal.png)
-![vertical.png](img/vertical.png)
-![diagonal.png](img/diagonal.png)
+#### Mean Filter
 
-![mean.png](img/boat/mean.png)
-![gauss.png](img/boat/gauss.png)
-![horizontal.png](img/boat/horizontal.png)
-![vertical.png](img/boat/vertical.png)
-![diagonal.png](img/boat/diagonal.png)
+![mean_kernel_size.png](img/mean_kernel_size.png)
+![mean_noise_level.png](img/mean_noise_level.png)
+
+![mean_kernel_size.png](img/boat/mean_kernel_size.png)
+![mean_noise_level.png](img/boat/mean_noise_level.png)
+
+#### Gaussian Filter
+![gauss_kernel_size.png](img/gauss_kernel_size.png)
+![gauss_noise_level.png](img/gauss_noise_level.png)
+
+![gauss_kernel_size.png](img/boat/gauss_kernel_size.png)
+![gauss_noise_level.png](img/boat/gauss_noise_level.png)
+
+#### Horizontal Motion Blur
+![horizontal_kernel_size.png](img/horizontal_kernel_size.png)
+![horizontal_noise_level.png](img/horizontal_noise_level.png)
+
+![horizontal_kernel_size.png](img/boat/horizontal_kernel_size.png)
+![horizontal_noise_level.png](img/boat/horizontal_noise_level.png)
+
+#### Vertical Motion Blur
+![vertical_kernel_size.png](img/vertical_kernel_size.png)
+![vertical_noise_level.png](img/vertical_noise_level.png)
+
+![vertical_kernel_size.png](img/boat/vertical_kernel_size.png)
+![vertical_noise_level.png](img/boat/vertical_noise_level.png)
+
+#### Diagonal Motion Blur
+![diagonal_kernel_size.png](img/diagonal_kernel_size.png)
+![diagonal_noise_level.png](img/diagonal_noise_level.png)
+
+![diagonal_kernel_size.png](img/boat/diagonal_kernel_size.png)
+![diagonal_noise_level.png](img/boat/diagonal_noise_level.png)
+
 
 > TODO: Discuss the results
 
@@ -223,14 +244,25 @@ where:
 - $B$ is the Butterworth filter
 
 ### Test-Pictures
-![mean_butterworth.png](img/mean_butterworth.png)
-![gauss_butterworth.png](img/gauss_butterworth.png)
-![horizontal_butterworth.png](img/horizontal_butterworth.png)
-![vertical.png](img/vertical_butterworth.png)
-![diagonal_butterworth.png](img/diagonal_butterworth.png)
+#### Mean Filter with Butterworth
+![mean_kernel_size_butterworth.png](img/mean_and_butterworth.png)
+![mean_and_butterworth.png](img/boat/mean_and_butterworth.png)
 
-![mean.png](img/boat/mean_butterworth.png)
-![gauss.png](img/boat/gauss_butterworth.png)
-![horizontal.png](img/boat/horizontal_butterworth.png)
-![vertical.png](img/boat/vertical_butterworth.png)
-![diagonal.png](img/boat/diagonal_butterworth.png)
+
+#### Gaussian Filter with Butterworth
+![gauss_kernel_size_butterworth.png](img/gauss_and_butterworth.png)
+![gauss_and_butterworth.png](img/boat/gauss_and_butterworth.png)
+
+
+#### Horizontal Motion Blur with Butterworth
+![horizontal_kernel_size_butterworth.png](img/horizontal_and_butterworth.png)
+![horizontal_and_butterworth.png](img/boat/horizontal_and_butterworth.png)
+
+#### Vertical Motion Blur with Butterworth
+![vertical_kernel_size_butterworth.png](img/vertical_and_butterworth.png)
+![vertical_and_butterworth.png](img/boat/vertical_and_butterworth.png)
+
+#### Diagonal Motion Blur with Butterworth
+![diagonal_kernel_size_butterworth.png](img/diagonal_and_butterworth.png)
+![diagonal_and_butterworth.png](img/boat/diagonal_and_butterworth.png)
+
