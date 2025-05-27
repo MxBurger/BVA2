@@ -7,9 +7,7 @@ from wiener_filter import calculate_psnr, pad_to_shape
 def plot_kernel_comparison(img: np.ndarray, kernel_type: str, kernel_sizes: List[int], 
                           kernels_dict: Dict[int, np.ndarray], degraded_images: Dict[int, np.ndarray],
                           restored_images: Dict[int, Dict[float, np.ndarray]], K_values: List[float]):
-    """
-    Plot comparison of different kernel sizes for a specific kernel type.
-    """
+    """Plot comparison of different kernel sizes for a specific kernel type."""
     fig, axes = plt.subplots(len(kernel_sizes), len(K_values) + 2, figsize=(20, 16))
     fig.suptitle(f'Wiener Filter - {kernel_type} kernel (varying radii)', fontsize=16)
 
@@ -42,9 +40,7 @@ def plot_kernel_comparison(img: np.ndarray, kernel_type: str, kernel_sizes: List
 def plot_noise_level_analysis(img: np.ndarray, kernel_type: str, kernel_size: int,
                              noise_variances: List[float], degraded_images: List[np.ndarray],
                              restored_images: Dict[float, List[np.ndarray]], K_values: List[float]):
-    """
-    Plot analysis of different noise levels for a specific kernel.
-    """
+    """Plot analysis of different noise levels for a specific kernel."""
     fig, axes = plt.subplots(len(noise_variances), len(K_values) + 2, figsize=(16, 12))
     fig.suptitle(f'Noise Level Analysis - {kernel_type} kernel (radius={kernel_size})', fontsize=14)
 
@@ -76,9 +72,7 @@ def plot_noise_level_analysis(img: np.ndarray, kernel_type: str, kernel_size: in
 def plot_butterworth_comparison(img: np.ndarray, degraded: np.ndarray, 
                                restored_no_butter: np.ndarray, restored_butter: np.ndarray,
                                kernel_name: str = "Unknown"):
-    """
-    Plot comparison of Wiener filter with and without Butterworth enhancement.
-    """
+    """Plot comparison of Wiener filter with and without Butterworth enhancement."""
     degraded_psnr = calculate_psnr(img, degraded)
     psnr_no_butter = calculate_psnr(img, restored_no_butter)
     psnr_butter = calculate_psnr(img, restored_butter)
@@ -115,9 +109,7 @@ def plot_butterworth_comparison(img: np.ndarray, degraded: np.ndarray,
 
 
 def plot_frequency_response(kernel: np.ndarray, K_values: List[float]):
-    """
-    Visualize the frequency response of the Wiener filter.
-    """
+    """Visualize the frequency response of the Wiener filter."""
     # Pad kernel to a reasonable size for visualization
     size = 256
     kernel_padded = pad_to_shape(kernel, (size, size))

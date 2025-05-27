@@ -4,9 +4,7 @@ from test_scenarios import run_tests, run_frequency_analysis
 
 
 def load_image(image_path: str):
-    """
-    Load image from path or create synthetic image if file not found.
-    """
+    """Load image from path or create synthetic image if file not found."""
     if image_path:
         img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
         if img is not None:
@@ -17,9 +15,7 @@ def load_image(image_path: str):
 
 
 def main():
-    """
-    Main demonstration function.
-    """
+    """Main demonstration function."""
     image_path = ""  # Enter image path here or leave empty for synthetic image
     img = load_image(image_path)
     

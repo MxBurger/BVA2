@@ -5,9 +5,7 @@ import numpy as np
 
 
 def create_synthetic_image(size: Tuple[int, int] = (256, 256)) -> np.ndarray:
-    """
-    Create a synthetic test image with various features.
-    """
+    """Create a synthetic test image with various features."""
     img = np.zeros(size, dtype=np.uint8)
 
     # Add some geometric shapes

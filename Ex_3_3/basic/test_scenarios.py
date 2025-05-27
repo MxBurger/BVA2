@@ -12,9 +12,7 @@ from visualization import (
 
 def test_kernel_variations(img: np.ndarray, kernel_type: str, kernel_sizes: List[int], 
                           noise_variance: float, K_values: List[float]):
-    """
-    Test Wiener filter performance with different kernel sizes for a specific kernel type.
-    """
+    """Test Wiener filter performance with different kernel sizes for a specific kernel type."""
     print(f"\n=== Testing {kernel_type} kernel with different radii ===")
     
     kernels_dict = {}
@@ -49,9 +47,7 @@ def test_kernel_variations(img: np.ndarray, kernel_type: str, kernel_sizes: List
 
 def test_noise_levels(img: np.ndarray, kernel_type: str, kernel_size: int, 
                      noise_variances: List[float], K_values: List[float]):
-    """
-    Test different noise levels with a specific kernel radius.
-    """
+    """Test different noise levels with a specific kernel radius."""
     kernels = create_kernels(kernel_size)
     kernel = kernels[kernel_type]
     
@@ -79,9 +75,7 @@ def test_noise_levels(img: np.ndarray, kernel_type: str, kernel_size: int,
 
 def test_butterworth_enhancement(img: np.ndarray, kernel: np.ndarray, 
                                 noise_var: float, kernel_name: str = "Unknown"):
-    """
-    Test Wiener filter with and without Butterworth filtering.
-    """
+    """Test Wiener filter with and without Butterworth filtering."""
     degraded = degrade_image(img, kernel, noise_var)
     
     # Wiener without Butterworth
@@ -97,9 +91,7 @@ def test_butterworth_enhancement(img: np.ndarray, kernel: np.ndarray,
 
 
 def run_tests(img: np.ndarray):
-    """
-    Run all tests for the Wiener filter.
-    """
+    """Run all tests for the Wiener filter."""
     # Test parameters
     kernel_sizes = [5, 15, 25, 35]
     noise_variances = [10, 50, 250]
@@ -122,9 +114,7 @@ def run_tests(img: np.ndarray):
 
 
 def run_frequency_analysis(kernel_sizes: List[int], K_values: List[float]):
-    """
-    Run frequency response analysis for different kernel sizes.
-    """
+    """Run frequency response analysis for different kernel sizes."""
     print("\n=== Frequency Response Analysis ===")
     
     for size in kernel_sizes:
@@ -136,9 +126,7 @@ def run_frequency_analysis(kernel_sizes: List[int], K_values: List[float]):
 
 def evaluate_restoration_quality(original: np.ndarray, degraded: np.ndarray, 
                                 restored: np.ndarray) -> Dict[str, float]:
-    """
-    Evaluate restoration quality using multiple metrics.
-    """
+    """Evaluate restoration quality using multiple metrics."""
     metrics = {}
     
     # PSNR
