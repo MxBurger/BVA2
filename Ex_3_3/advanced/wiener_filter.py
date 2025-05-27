@@ -98,14 +98,14 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray, reference_images: Li
     if degraded_img.max() > 1.0:
         degraded_img = degraded_img.astype(np.float64) / 255.0
 
-    best_idx, similarity, synthetic_ref = find_best_reference_match(degraded_img, reference_images)
+    best_idx, similarity, reference = find_best_reference_match(degraded_img, reference_images)
     results['reference_match'] = {
         'best_index': best_idx,
         'similarity': similarity,
-        'reference_image': synthetic_ref
+        'reference_image': reference
     }
 
-    ref_for_kernel = synthetic_ref
+    ref_for_kernel = reference
     if len(ref_for_kernel.shape) == 3:
         ref_for_kernel = cv2.cvtColor(ref_for_kernel, cv2.COLOR_BGR2GRAY)
 
