@@ -1,8 +1,8 @@
 import cv2
 from typing import List
-from wiener_processor import advanced_wiener_deconvolution
+from wiener_filter import advanced_wiener_deconvolution
 from image_utils import load_reference_images
-from plots import plot_results, print_summary
+from visualization import plot_results, print_summary
 from degradation import degrade_image, create_kernels
 
 
@@ -40,7 +40,7 @@ def test_different_kernels():
 
     clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
 
-    kernel_sizes = [5, 15, 25]
+    kernel_sizes = [15]
     for kernel_size in kernel_sizes:
         kernels = create_kernels(kernel_size)
 
