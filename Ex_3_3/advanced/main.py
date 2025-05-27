@@ -1,6 +1,6 @@
 
 import cv2
-from test_scenarios import run_wiener_restoration, test_different_kernels, test_noise_levels
+from test_scenarios import test_different_kernels, test_noise_levels
 
 
 def main():

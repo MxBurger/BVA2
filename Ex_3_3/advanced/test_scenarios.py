@@ -1,7 +1,7 @@
 import cv2
 from typing import List
 from wiener_filter import advanced_wiener_deconvolution
-from image_utils import load_reference_images
+from image_utilities import load_reference_images
 from visualization import plot_results, print_summary
 from degradation import degrade_image, create_kernels
 

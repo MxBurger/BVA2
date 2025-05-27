@@ -56,7 +56,6 @@ def find_best_reference_match(degraded_img: np.ndarray,
 
     print(f"Best match: Reference {best_index} with similarity {best_similarity:.4f}")
 
-    from .filters import create_synthetic_reference
     best_ref_processed, _ = preprocess_images_for_comparison(best_reference, degraded_img)
     motion_kernel = np.array([[0, 0, 0.2, 0.6, 0.2, 0, 0]])
     synthetic_ref = create_synthetic_reference(best_ref_processed, motion_kernel)
@@ -89,3 +88,26 @@ def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dic
         'snr': snr,
         'edge_preservation': edge_preservation
     }
+
+def create_synthetic_reference(degraded_img: np.ndarray, blur_kernel: np.ndarray) -> np.ndarray:
+    """Create a synthetic sharp reference by attempting basic deblurring."""
+    kernel_padded = np.zeros_like(degraded_img)
+    k_h, k_w = blur_kernel.shape
+    start_h = (degraded_img.shape[0] - k_h) // 2
+    start_w = (degraded_img.shape[1] - k_w) // 2
+    kernel_padded[start_h:start_h + k_h, start_w:start_w + k_w] = blur_kernel
+    kernel_padded = np.fft.fftshift(kernel_padded)
+
+    G = np.fft.fft2(degraded_img)
+    H = np.fft.fft2(kernel_padded)
+
+    H_conj = np.conj(H)
+    H_magnitude_sq = np.abs(H) ** 2
+
+    inverse_filter = H_conj / (H_magnitude_sq + 0.1 * np.mean(H_magnitude_sq))
+    F_estimate = inverse_filter * G
+
+    synthetic_ref = np.fft.ifft2(F_estimate)
+    synthetic_ref = np.real(synthetic_ref)
+
+    return np.clip(synthetic_ref, 0, 1)
