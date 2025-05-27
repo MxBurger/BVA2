@@ -39,8 +39,9 @@ def test_different_kernels():
 
 
 def test_noise_levels():
-    reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.tif"]
-    reference_labels = ["landscape", "portrait"]
+    reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.tif", "ref/mandril_gray.tif",
+                       "ref/peppers_gray.tif", "ref/text.png"]
+    reference_labels = ["landscape", "portrait", "animal", "food", "text"]
 
     clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
     kernels = create_kernels(15)
