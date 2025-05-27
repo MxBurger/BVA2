@@ -5,10 +5,17 @@ from typing import List, Dict
 from image_utilities import preprocess_images_for_comparison, calculate_quality_metrics, \
     find_best_reference_match, create_synthetic_reference
 
+def estimate_kernel_size(degraded_img: np.ndarray) -> int:
+    min_dim = min(degraded_img.shape[:2])
+    size = max(5, min(25, min_dim // 15))
+    return size if size % 2 == 1 else size + 1
+
 
 def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray,
-                    kernel_size: int = 15, regularization: float = 0.01) -> np.ndarray:
-    """Estimate degradation kernel using stable Wiener formulation."""
+                    kernel_size: int = None, regularization: float = 0.01) -> np.ndarray:
+    if kernel_size is None:
+        kernel_size = estimate_kernel_size(degraded_img)
+
     min_h = min(original_img.shape[0], degraded_img.shape[0])
     min_w = min(original_img.shape[1], degraded_img.shape[1])
     original_img = original_img[:min_h, :min_w]
@@ -57,7 +64,6 @@ def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray,
 
 
 def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> np.ndarray:
-    """Apply Wiener deconvolution with proper regularization."""
     rows, cols = degraded.shape
 
     kernel_padded = np.zeros((rows, cols))
@@ -88,7 +94,6 @@ def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> 
 def analyze_content_similarity_impact(degraded_img: np.ndarray,
                                       reference_images: List[np.ndarray],
                                       reference_labels: List[str]) -> Dict:
-    """Analyze how content similarity affects restoration quality."""
     results = {}
 
     print(f"\n=== CONTENT SIMILARITY IMPACT ANALYSIS ===")
@@ -155,7 +160,6 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray,
                                   reference_labels: List[str] = None,
                                   K_values: List[float] = [0.01, 0.05, 0.1, 0.5],
                                   noise_type: str = 'gaussian') -> Dict:
-    """Perform advanced Wiener deconvolution using kernel estimation."""
     results = {}
 
     if degraded_img.max() > 1.0:
@@ -213,5 +217,3 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray,
     results['best_K'] = best_K
 
     return results
-
-

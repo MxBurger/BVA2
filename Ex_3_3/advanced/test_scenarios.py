@@ -40,7 +40,7 @@ def test_different_kernels():
 
     clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
 
-    kernel_sizes = [15]
+    kernel_sizes = [5, 15, 25]
     for kernel_size in kernel_sizes:
         kernels = create_kernels(kernel_size)
 
