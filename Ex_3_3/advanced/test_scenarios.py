@@ -7,7 +7,7 @@ from degradation import degrade_image, create_kernels
 
 
 def run_wiener_restoration(degraded_img, reference_paths: List[str],
-                           reference_labels: List[str] = None):
+                           reference_labels: List[str] = None, true_kernel=None, kernel_info=None):
     """Run advanced Wiener filter restoration process."""
     print("=== ADVANCED WIENER FILTER ===")
 
@@ -21,7 +21,7 @@ def run_wiener_restoration(degraded_img, reference_paths: List[str],
         K_values=[0.01, 0.05, 0.1, 0.5]
     )
 
-    plot_results(results, degraded_img)
+    plot_results(results, degraded_img, true_kernel, kernel_info)
     print_summary(results)
     print(f"\nOptimal Configuration: K = {results['best_K']}")
 
@@ -50,7 +50,8 @@ def test_different_kernels():
             print(f"{'=' * 50}")
 
             degraded_input = degrade_image(clean_input, kernel)
-            run_wiener_restoration(degraded_input, reference_paths, reference_labels)
+            kernel_info = f"{kernel_name.capitalize()} {kernel_size}x{kernel_size}"
+            run_wiener_restoration(degraded_input, reference_paths, reference_labels, kernel, kernel_info)
 
 
 def test_noise_levels():
@@ -73,7 +74,8 @@ def test_noise_levels():
         print(f"{'=' * 50}")
 
         degraded_input = degrade_image(clean_input, gaussian_kernel, noise_var)
-        run_wiener_restoration(degraded_input, reference_paths, reference_labels)
+        kernel_info = f"Gaussian {gaussian_kernel.shape[0]}x{gaussian_kernel.shape[1]}"
+        run_wiener_restoration(degraded_input, reference_paths, reference_labels, gaussian_kernel, kernel_info)
 
 
 if __name__ == "__main__":

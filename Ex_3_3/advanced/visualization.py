@@ -12,10 +12,10 @@ def plot_kernel(kernel: np.ndarray, title: str = "Estimated Kernel"):
     plt.show()
 
 
-def plot_results(results: Dict, degraded_img: np.ndarray):
+def plot_results(results: Dict, degraded_img: np.ndarray, true_kernel: np.ndarray = None, kernel_info: str = None):
     """Plot results of advanced Wiener filtering."""
-    fig = plt.figure(figsize=(16, 10))
-    gs = fig.add_gridspec(2, 4, hspace=0.3, wspace=0.3)
+    fig = plt.figure(figsize=(20, 10))
+    gs = fig.add_gridspec(2, 5, hspace=0.3, wspace=0.3)
 
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.imshow(results['reference_match']['reference_image'], cmap='gray')
@@ -40,45 +40,55 @@ def plot_results(results: Dict, degraded_img: np.ndarray):
     ax4.set_title('Estimated Kernel')
     ax4.axis('off')
 
-    ax5 = fig.add_subplot(gs[1, 0:2])
+    # Show true kernel if provided
+    if true_kernel is not None:
+        ax5 = fig.add_subplot(gs[0, 4])
+        ax5.imshow(true_kernel, cmap='hot')
+        title = 'True Kernel'
+        if kernel_info:
+            title += f'\n({kernel_info})'
+        ax5.set_title(title)
+        ax5.axis('off')
+
+    ax6 = fig.add_subplot(gs[1, 0:2])
     K_values = list(results['quality_metrics'].keys())
     psnr_values = [results['quality_metrics'][K]['psnr'] for K in K_values]
 
-    ax5.semilogx(K_values, psnr_values, 'bo-', linewidth=2, markersize=8)
-    ax5.set_xlabel('Regularization K')
-    ax5.set_ylabel('PSNR (dB)')
-    ax5.set_title('PSNR vs Regularization Parameter')
-    ax5.grid(True, alpha=0.3)
+    ax6.semilogx(K_values, psnr_values, 'bo-', linewidth=2, markersize=8)
+    ax6.set_xlabel('Regularization K')
+    ax6.set_ylabel('PSNR (dB)')
+    ax6.set_title('PSNR vs Regularization Parameter')
+    ax6.grid(True, alpha=0.3)
 
     best_psnr = results['quality_metrics'][best_K]['psnr']
-    ax5.semilogx(best_K, best_psnr, 'ro', markersize=10, label=f'Best: K={best_K}')
-    ax5.legend()
+    ax6.semilogx(best_K, best_psnr, 'ro', markersize=10, label=f'Best: K={best_K}')
+    ax6.legend()
 
     if 'content_similarity_analysis' in results and results['content_similarity_analysis']:
         content_analysis = results['content_similarity_analysis']
 
-        ax6 = fig.add_subplot(gs[1, 2:4])
+        ax7 = fig.add_subplot(gs[1, 2:5])
         labels = list(content_analysis.keys())
         spatial_corr = [content_analysis[label]['similarity_metrics']['spatial_correlation']
                         for label in labels]
         best_psnr_per_ref = [content_analysis[label]['best_metrics']['psnr']
                              for label in labels]
 
-        ax6.scatter(spatial_corr, best_psnr_per_ref, s=100, alpha=0.7,
+        ax7.scatter(spatial_corr, best_psnr_per_ref, s=100, alpha=0.7,
                     c=range(len(labels)), cmap='viridis')
-        ax6.set_xlabel('Spatial Correlation with Degraded Image')
-        ax6.set_ylabel('Best PSNR (dB)')
-        ax6.set_title('Content Similarity vs Restoration Quality')
-        ax6.grid(True, alpha=0.3)
+        ax7.set_xlabel('Spatial Correlation with Degraded Image')
+        ax7.set_ylabel('Best PSNR (dB)')
+        ax7.set_title('Content Similarity vs Restoration Quality')
+        ax7.grid(True, alpha=0.3)
 
         for i, label in enumerate(labels):
-            ax6.annotate(label, (spatial_corr[i], best_psnr_per_ref[i]),
+            ax7.annotate(label, (spatial_corr[i], best_psnr_per_ref[i]),
                          xytext=(5, 5), textcoords='offset points', fontsize=8)
 
         if len(spatial_corr) > 2:
             correlation_coeff = np.corrcoef(spatial_corr, best_psnr_per_ref)[0, 1]
-            ax6.text(0.05, 0.95, f'Correlation: {correlation_coeff:.3f}',
-                     transform=ax6.transAxes, fontsize=10,
+            ax7.text(0.05, 0.95, f'Correlation: {correlation_coeff:.3f}',
+                     transform=ax7.transAxes, fontsize=10,
                      bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.7))
 
     fig.suptitle('Advanced Wiener Filter - Kernel Analysis', fontsize=16, y=0.95)
