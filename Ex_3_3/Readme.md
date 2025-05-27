@@ -361,3 +361,42 @@ For one final score, the average of the gradient correlation and SSIM is compute
 ```python
 combined_score = 0.7 * grad_similarity + 0.3 * ssim_score
 ```
+
+#### Kernel Estimation
+
+To estimate the degradation kernel $h(x,y)$, the system compares the **frequency domain** representation of
+the degraded image $G(u,v)$ with the most similar reference image $F(u,v)$. It uses the following approximation:
+
+$$
+H(u,v) \approx \frac{G(u,v) \cdot F^*(u,v)}{|F(u,v)|^2 + \epsilon}
+$$
+
+Where:
+- $G(u,v)$ is the Fourier transform of the degraded image  
+- $F(u,v)$ is the Fourier transform of the selected reference  
+- $F^*(u,v)$ is the complex conjugate of \( F(u,v) \)  
+- $\epsilon$ is a small constant to avoid division by zero
+
+Once the estimated kernel in the frequency domain $H(u,v)$  is computed, the inverse FFT is used to recover the spatial
+domain representation $h(x,y)$, which is then centered and normalized.
+
+```python
+H_estimate = (G * F_conj) / (F_magnitude_sq + epsilon)
+h_estimate = np.fft.ifft2(H_estimate)
+h_estimate = np.real(np.fft.ifftshift(h_estimate))
+```
+
+#### Restoration with Estimated Kernel
+
+After estimating the kernel, Wiener deconvolution is applied again:
+
+```python
+restored = wiener_deconvolution(degraded_img, estimated_kernel, K)
+```
+
+Multiple values for the regularization constant $K$ are tested to find the optimal result.
+The metrics used for evaluation are **PSNR**, **SNR**, and **edge preservation**.
+
+- **PSNR (Peak Signal-to-Noise Ratio)** quantifies pixel-wise accuracy.  
+- **SNR (Signal-to-Noise Ratio)** gives the overall signal integrity.  
+- **Edge preservation** is calculated using gradient correlation between the restored and 
