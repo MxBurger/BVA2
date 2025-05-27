@@ -18,7 +18,7 @@ def run_wiener_restoration(degraded_img, reference_paths: List[str],
 
     results = advanced_wiener_deconvolution(
         degraded_img, reference_images, reference_labels,
-        K_values=[0.01, 0.05, 0.1, 0.5]
+        K_values=[0.0001, 0.001, 0.01, 0.05, 0.1, 0.5]
     )
 
     plot_results(results, degraded_img, true_kernel, kernel_info)
