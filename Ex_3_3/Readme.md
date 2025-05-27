@@ -272,3 +272,92 @@ where:
 ![diagonal_and_butterworth.png](img/boat/diagonal_and_butterworth.png)
 
 ## Advanced Implementation
+
+While the core Wiener filter assumes knowledge of the degradation kernel, this advanced implementation attempts to
+estimate the kernel by comparing the degraded image to natural reference images. In theory, this allows for
+blind deblurring, where the kernel is unknown.
+
+### Goal
+To restore a degraded image without knowing the exact blurring kernel, by:
+
+1. Finding the best matching reference image from a set of natural images.
+
+2. Estimating the kernel by comparing the frequency response of the degraded image and the reference image.
+
+3. Applying Wiener deconvolution with the estimated kernel.
+
+```mermaid
+graph LR
+A[degraded image] --> B[find best matching reference]
+B --> C[estimate kernel from frequency domain]
+C --> D[apply Wiener filter]
+D --> E[restore image]
+```
+
+### Implementation
+
+#### Reference Image Selection
+
+Using a collection of reference images (e.g. landscapes, portraits, text), the best match is determined based on:
+
+- **Gradient correlation** (horizontal + vertical)
+- **Structural Similarity Index (SSIM)**
+
+>Gradient Correlation is a similarity metric that compares the gradient (edge) structures of two images rather than
+> their raw pixel values. It measures how well the direction and strength of edges in one image align with those in
+> another, typically using the dot product of gradient vectors. This method is particularly useful for images with
+> illumination differences, as gradients are less sensitive to uniform brightness changes. A higher gradient correlation
+> indicates greater structural similarity between the images.
+
+```python
+ref_grad = np.gradient(ref_processed)
+deg_grad = np.gradient(deg_processed)
+```
+This computes edge information in x and y directions of both the reference and degraded images.
+The average correlation (horizontal and vertical) is then calculated as:
+```python
+grad_similarity = np.corrcoef(ref_grad[0].flatten(), deg_grad[0].flatten())[0, 1]
+grad_similarity += np.corrcoef(ref_grad[1].flatten(), deg_grad[1].flatten())[0, 1]
+grad_similarity /= 2
+```
+
+>The Structural Similarity Index (SSIM) is a perceptual metric that measures image similarity by comparing luminance,
+> contrast, and structural information between two images. Unlike simple metrics like MSE or PSNR, SSIM models the human
+> visual system's sensitivity to changes in structure and texture. It produces a value between -1 and 1, where 1
+> indicates perfect similarity. SSIM is commonly used for assessing image quality in restoration tasks. 
+
+```python
+def structural_similarity(img1: np.ndarray, img2: np.ndarray) -> float:
+    img1 = img1.astype(np.float64)
+    img2 = img2.astype(np.float64)
+
+    min_h = min(img1.shape[0], img2.shape[0])
+    min_w = min(img1.shape[1], img2.shape[1])
+    img1 = img1[:min_h, :min_w]
+    img2 = img2[:min_h, :min_w]
+
+    c1 = 0.01 ** 2
+    c2 = 0.03 ** 2
+
+    mu1 = cv2.GaussianBlur(img1, (7, 7), 1.5)
+    mu2 = cv2.GaussianBlur(img2, (7, 7), 1.5)
+
+    mu1_sq = mu1 ** 2
+    mu2_sq = mu2 ** 2
+    mu1_mu2 = mu1 * mu2
+
+    sigma1_sq = cv2.GaussianBlur(img1 ** 2, (7, 7), 1.5) - mu1_sq
+    sigma2_sq = cv2.GaussianBlur(img2 ** 2, (7, 7), 1.5) - mu2_sq
+    sigma12 = cv2.GaussianBlur(img1 * img2, (7, 7), 1.5) - mu1_mu2
+
+    numerator = (2 * mu1_mu2 + c1) * (2 * sigma12 + c2)
+    denominator = (mu1_sq + mu2_sq + c1) * (sigma1_sq + sigma2_sq + c2)
+
+    ssim_map = numerator / (denominator + 1e-10)
+    return np.mean(ssim_map)
+```
+
+For one final score, the average of the gradient correlation and SSIM is computed:
+```python
+combined_score = 0.7 * grad_similarity + 0.3 * ssim_score
+```
