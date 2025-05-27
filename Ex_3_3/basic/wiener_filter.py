@@ -1,8 +1,3 @@
-"""
-Core Wiener filter implementation functions.
-This module contains the main filtering algorithms.
-"""
-
 import numpy as np
 import cv2
 from typing import Tuple, Dict
@@ -11,12 +6,6 @@ from typing import Tuple, Dict
 def create_kernels(kernel_size: int) -> Dict[str, np.ndarray]:
     """
     Create various blur kernels for testing.
-
-    Args:
-        kernel_size: Size of the kernel (must be odd)
-
-    Returns:
-        Dictionary containing different kernels
     """
     kernels = {}
 
@@ -44,14 +33,9 @@ def create_kernels(kernel_size: int) -> Dict[str, np.ndarray]:
 
     return kernels
 
-
 def add_noise(image: np.ndarray, noise_variance: float) -> np.ndarray:
     """
     Add Gaussian noise to an image.
-
-    Args:
-        image: Input image
-        noise_variance: Variance of the Gaussian noise
 
     Returns:
         Noisy image
@@ -60,16 +44,10 @@ def add_noise(image: np.ndarray, noise_variance: float) -> np.ndarray:
     noisy_image = image + noise
     return np.clip(noisy_image, 0, 255).astype(np.uint8)
 
-
 def degrade_image(image: np.ndarray, kernel: np.ndarray, noise_variance: float) -> np.ndarray:
     """
     Degrade an image by applying convolution and adding noise.
     g(x,y) = f(x,y) * h(x,y) + n(x,y)
-
-    Args:
-        image: Original image
-        kernel: Blur kernel
-        noise_variance: Variance of additive Gaussian noise
 
     Returns:
         Degraded image
@@ -82,7 +60,6 @@ def degrade_image(image: np.ndarray, kernel: np.ndarray, noise_variance: float) 
     
     return degraded
 
-
 def pad_to_shape(array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
     """
     Pad array to target shape for FFT operations.
@@ -91,7 +68,6 @@ def pad_to_shape(array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray
     pad_w = target_shape[1] - array.shape[1]
     
     return np.pad(array, ((0, pad_h), (0, pad_w)), mode='constant')
-
 
 def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> np.ndarray:
     """
@@ -145,11 +121,6 @@ def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> 
 def butterworth_filter(shape: Tuple[int, int], cutoff: float, order: int = 2) -> np.ndarray:
     """
     Create a Butterworth low-pass filter for noise suppression.
-
-    Args:
-        shape: Shape of the filter
-        cutoff: Cutoff frequency (0 to 1)
-        order: Order of the filter
 
     Returns:
         Butterworth filter in frequency domain
@@ -206,10 +177,6 @@ def wiener_with_butterworth(degraded: np.ndarray, kernel: np.ndarray,
 def calculate_psnr(original: np.ndarray, restored: np.ndarray) -> float:
     """
     Calculate Peak Signal-to-Noise Ratio (PSNR) between original and restored image.
-
-    Args:
-        original: Original image
-        restored: Restored image
 
     Returns:
         PSNR value in dB

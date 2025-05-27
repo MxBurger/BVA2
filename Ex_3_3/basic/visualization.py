@@ -1,8 +1,3 @@
-"""
-Visualization functions for Wiener filter results.
-This module handles all plotting and display functionality.
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Dict

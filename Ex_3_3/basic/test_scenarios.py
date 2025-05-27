@@ -1,8 +1,3 @@
-"""
-Test scenarios and evaluation functions for Wiener filter.
-This module contains all testing and comparison functionality.
-"""
-
 import numpy as np
 from typing import List, Dict
 from wiener_filter import (
@@ -103,7 +98,7 @@ def test_butterworth_enhancement(img: np.ndarray, kernel: np.ndarray,
 
 def run_tests(img: np.ndarray):
     """
-    Run all comprehensive tests for the Wiener filter.
+    Run all tests for the Wiener filter.
     """
     # Test parameters
     kernel_sizes = [5, 15, 25, 35]
@@ -143,9 +138,6 @@ def evaluate_restoration_quality(original: np.ndarray, degraded: np.ndarray,
                                 restored: np.ndarray) -> Dict[str, float]:
     """
     Evaluate restoration quality using multiple metrics.
-    
-    Returns:
-        Dictionary containing quality metrics
     """
     metrics = {}
     

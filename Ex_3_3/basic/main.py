@@ -1,8 +1,3 @@
-"""
-Main demonstration script for Wiener filter implementation.
-This script orchestrates all tests and demonstrations.
-"""
-
 import cv2
 from sample_generator import create_synthetic_image
 from test_scenarios import run_tests, run_frequency_analysis
