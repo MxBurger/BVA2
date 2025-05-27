@@ -3,6 +3,47 @@ import cv2
 from typing import List, Tuple, Dict
 
 
+def structural_similarity(img1: np.ndarray, img2: np.ndarray,
+                          window_size: int = 7, k1: float = 0.01, k2: float = 0.03) -> float:
+    """Calculate SSIM between two images."""
+    # Convert to float if needed
+    if img1.dtype != np.float64:
+        img1 = img1.astype(np.float64)
+    if img2.dtype != np.float64:
+        img2 = img2.astype(np.float64)
+
+    # Ensure same size
+    if img1.shape != img2.shape:
+        min_h = min(img1.shape[0], img2.shape[0])
+        min_w = min(img1.shape[1], img2.shape[1])
+        img1 = img1[:min_h, :min_w]
+        img2 = img2[:min_h, :min_w]
+
+    # Constants for stability
+    c1 = (k1) ** 2
+    c2 = (k2) ** 2
+
+    # Calculate means
+    mu1 = cv2.GaussianBlur(img1, (window_size, window_size), 1.5)
+    mu2 = cv2.GaussianBlur(img2, (window_size, window_size), 1.5)
+
+    mu1_sq = mu1 ** 2
+    mu2_sq = mu2 ** 2
+    mu1_mu2 = mu1 * mu2
+
+    # Calculate variances and covariance
+    sigma1_sq = cv2.GaussianBlur(img1 ** 2, (window_size, window_size), 1.5) - mu1_sq
+    sigma2_sq = cv2.GaussianBlur(img2 ** 2, (window_size, window_size), 1.5) - mu2_sq
+    sigma12 = cv2.GaussianBlur(img1 * img2, (window_size, window_size), 1.5) - mu1_mu2
+
+    # Calculate SSIM
+    numerator = (2 * mu1_mu2 + c1) * (2 * sigma12 + c2)
+    denominator = (mu1_sq + mu2_sq + c1) * (sigma1_sq + sigma2_sq + c2)
+
+    ssim_map = numerator / (denominator + 1e-10)
+    return np.mean(ssim_map)
+
+
 def load_reference_images(reference_paths: List[str]) -> List[np.ndarray]:
     """Load multiple natural reference images for kernel estimation."""
     reference_images = []
@@ -27,7 +68,7 @@ def preprocess_images_for_comparison(ref_img: np.ndarray, degraded_img: np.ndarr
 
 def find_best_reference_match(degraded_img: np.ndarray,
                               reference_images: List[np.ndarray]) -> Tuple[int, float, np.ndarray]:
-    """Find the best matching reference image and create synthetic sharp version."""
+    """Find the best matching reference image using combined gradient and SSIM similarity."""
     best_similarity = -1
     best_index = 0
     best_reference = None
@@ -37,6 +78,7 @@ def find_best_reference_match(degraded_img: np.ndarray,
     for i, ref_img in enumerate(reference_images):
         ref_processed, deg_processed = preprocess_images_for_comparison(ref_img, degraded_img)
 
+        # Calculate gradient similarity
         ref_grad = np.gradient(ref_processed)
         deg_grad = np.gradient(deg_processed)
 
@@ -47,14 +89,21 @@ def find_best_reference_match(degraded_img: np.ndarray,
         if np.isnan(grad_similarity):
             grad_similarity = 0
 
-        print(f"  Reference {i}: gradient similarity = {grad_similarity:.4f}")
+        # Calculate SSIM similarity
+        ssim_score = structural_similarity(ref_processed, deg_processed)
 
-        if grad_similarity > best_similarity:
-            best_similarity = grad_similarity
+        # Combine gradient correlation with SSIM (70% gradient, 30% SSIM)
+        combined_score = 0.7 * grad_similarity + 0.3 * ssim_score
+
+        print(
+            f"  Reference {i}: gradient similarity = {grad_similarity:.4f}, SSIM = {ssim_score:.4f}, combined = {combined_score:.4f}")
+
+        if combined_score > best_similarity:
+            best_similarity = combined_score
             best_index = i
             best_reference = ref_img
 
-    print(f"Best match: Reference {best_index} with similarity {best_similarity:.4f}")
+    print(f"Best match: Reference {best_index} with combined similarity {best_similarity:.4f}")
 
     best_ref_processed, _ = preprocess_images_for_comparison(best_reference, degraded_img)
     motion_kernel = np.array([[0, 0, 0.2, 0.6, 0.2, 0, 0]])
@@ -88,6 +137,7 @@ def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dic
         'snr': snr,
         'edge_preservation': edge_preservation
     }
+
 
 def create_synthetic_reference(degraded_img: np.ndarray, blur_kernel: np.ndarray) -> np.ndarray:
     """Create a synthetic sharp reference by attempting basic deblurring."""
