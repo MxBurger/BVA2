@@ -12,7 +12,7 @@ def main():
 
     print("\n\nNoise Level Testing")
     print("=" * 50)
-    #test_noise_levels()
+    test_noise_levels()
 
 
 if __name__ == "__main__":
