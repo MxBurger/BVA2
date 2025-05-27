@@ -1,22 +1,7 @@
 import numpy as np
 import cv2
 from typing import List, Tuple, Dict
-from scipy import signal
 import matplotlib.pyplot as plt
-
-
-def add_controlled_noise(image: np.ndarray, noise_level: float, noise_type: str = 'gaussian') -> np.ndarray:
-    """Add controlled noise to test Wiener filter robustness."""
-    if noise_type == 'gaussian':
-        noise = np.random.normal(0, noise_level, image.shape)
-    elif noise_type == 'uniform':
-        noise = np.random.uniform(-noise_level, noise_level, image.shape)
-    else:
-        raise ValueError("noise_type must be 'gaussian' or 'uniform'")
-
-    noisy = image + noise
-    return np.clip(noisy, 0, 1)
-
 
 def load_reference_images(reference_paths: List[str]) -> List[np.ndarray]:
     """Load multiple natural reference images for kernel estimation."""
@@ -143,7 +128,7 @@ def create_synthetic_reference(degraded_img: np.ndarray, blur_kernel: np.ndarray
 
 
 def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dict:
-    """Calculate comprehensive image quality metrics."""
+    """Calculate image quality metrics."""
     mse = np.mean((original - restored) ** 2)
     psnr = float('inf') if mse == 0 else 10 * np.log10(1.0 / mse)
 
@@ -309,7 +294,6 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray,
                                   reference_images: List[np.ndarray],
                                   reference_labels: List[str] = None,
                                   K_values: List[float] = [0.01, 0.05, 0.1, 0.5],
-                                  noise_level: float = 0.0,
                                   noise_type: str = 'gaussian') -> Dict:
     """
     Perform advanced Wiener deconvolution using kernel estimation.
@@ -318,9 +302,6 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray,
 
     if degraded_img.max() > 1.0:
         degraded_img = degraded_img.astype(np.float64) / 255.0
-
-    if noise_level > 0:
-        degraded_img = add_controlled_noise(degraded_img, noise_level, noise_type)
 
     if reference_labels and len(reference_labels) == len(reference_images):
         content_analysis = analyze_content_similarity_impact(
@@ -377,7 +358,7 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray,
 
 
 def plot_results(results: Dict, degraded_img: np.ndarray):
-    """Plot comprehensive results of advanced Wiener filtering."""
+    """Plot results of advanced Wiener filtering."""
     fig = plt.figure(figsize=(16, 10))
     gs = fig.add_gridspec(2, 4, hspace=0.3, wspace=0.3)
 
@@ -499,7 +480,7 @@ def print_summary(results: Dict):
 
 
 def run_wiener_restoration(degraded_img: np.ndarray, reference_paths: List[str],
-                           reference_labels: List[str] = None, noise_level: float = 0.0):
+                           reference_labels: List[str] = None):
     """Run advanced Wiener filter restoration process."""
     print("=== ADVANCED WIENER FILTER ===")
 
@@ -510,8 +491,7 @@ def run_wiener_restoration(degraded_img: np.ndarray, reference_paths: List[str],
 
     results = advanced_wiener_deconvolution(
         degraded_img, reference_images, reference_labels,
-        K_values=[0.01, 0.05, 0.1, 0.5],
-        noise_level=noise_level
+        K_values=[0.01, 0.05, 0.1, 0.5]
     )
 
     plot_results(results, degraded_img)
@@ -530,16 +510,9 @@ def main():
 
     reference_labels = ["landscape", "portrait", "animal", "food", "text"]
 
-    degraded_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
+    degraded_input = cv2.imread("simple_5px.png", cv2.IMREAD_GRAYSCALE)
+    run_wiener_restoration(degraded_input, reference_paths, reference_labels)
 
-    print(f"\n🔬 WITHOUT ADDITIONAL NOISE")
-    run_wiener_restoration(degraded_input, reference_paths, reference_labels, 0.0)
-
-    print(f"\n🔬 WITH LOW NOISE (σ=0.02)")
-    run_wiener_restoration(degraded_input, reference_paths, reference_labels, 0.02)
-
-    print(f"\n🔬 WITH MODERATE NOISE (σ=0.05)")
-    run_wiener_restoration(degraded_input, reference_paths, reference_labels, 0.05)
 
 
 if __name__ == "__main__":
