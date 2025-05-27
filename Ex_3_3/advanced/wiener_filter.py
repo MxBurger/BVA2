@@ -31,66 +31,115 @@ def load_reference_images(reference_paths: List[str]) -> List[np.ndarray]:
 def preprocess_images_for_comparison(ref_img: np.ndarray, degraded_img: np.ndarray,
                                      target_size: Tuple[int, int] = (256, 256)) -> Tuple[np.ndarray, np.ndarray]:
     """Preprocess reference and degraded images for comparison."""
-    # Resize both images to same size
     ref_resized = cv2.resize(ref_img, target_size)
     deg_resized = cv2.resize(degraded_img, target_size)
 
-    # Normalize to [0, 1] range
     ref_normalized = ref_resized / 255.0
     deg_normalized = deg_resized / 255.0
 
     return ref_normalized, deg_normalized
 
 
-def estimate_kernel(ref_img: np.ndarray, degraded_img: np.ndarray,
-                    kernel_size: int = 15, regularization: float = 1e-6) -> np.ndarray:
+def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray,
+                           kernel_size: int = 15, regularization: float = 0.01) -> np.ndarray:
     """
-    Estimate degradation kernel using Wiener-like regularization.
-
-    Args:
-        ref_img: Reference image [0, 1]
-        degraded_img: Degraded image [0, 1]
-        kernel_size: Size of the extracted kernel
-        regularization: Regularization parameter for stable division
-
-    Returns:
-        Estimated normalized kernel
+    Estimate degradation kernel using stable Wiener formulation.
     """
-    print(f"Estimating kernel {kernel_size}x{kernel_size}...")
+    print(f"\n📐 Estimating kernel ({kernel_size}x{kernel_size})...")
 
-    # Windowing to reduce edge effects
-    window = np.outer(np.hanning(ref_img.shape[0]), np.hanning(ref_img.shape[1]))
-    ref_windowed = ref_img * window
-    deg_windowed = degraded_img * window
+    # Ensure same dimensions
+    min_h = min(original_img.shape[0], degraded_img.shape[0])
+    min_w = min(original_img.shape[1], degraded_img.shape[1])
+    original_img = original_img[:min_h, :min_w]
+    degraded_img = degraded_img[:min_h, :min_w]
 
-    # FFT with zero padding for better frequency resolution
-    pad_shape = [2 * ref_img.shape[0], 2 * ref_img.shape[1]]
-    F = np.fft.fft2(ref_windowed, s=pad_shape)
-    G = np.fft.fft2(deg_windowed, s=pad_shape)
+    # Optional windowing (commented out)
+    # window = np.outer(signal.windows.hann(min_h), signal.windows.hann(min_w))
+    # original_img *= window
+    # degraded_img *= window
 
-    # Kernel estimation in frequency domain: H = G / F with regularization
-    F_magnitude = np.abs(F)
-    regularization_term = regularization * np.max(F_magnitude)
-    H_estimate = G * np.conj(F) / (F_magnitude ** 2 + regularization_term)
+    pad_shape = [min_h + kernel_size, min_w + kernel_size]
 
-    # Convert back to spatial domain
+    # FFTs
+    F = np.fft.fft2(original_img, s=pad_shape)
+    G = np.fft.fft2(degraded_img, s=pad_shape)
+
+    # Wiener-like estimation (classic form)
+    F_conj = np.conj(F)
+    F_magnitude_sq = np.abs(F) ** 2
+    epsilon = np.mean(F_magnitude_sq) * regularization
+
+    H_estimate = (G * F_conj) / (F_magnitude_sq + epsilon)
+
+    # Inverse FFT
     h_estimate = np.fft.ifft2(H_estimate)
-    h_estimate = np.fft.ifftshift(np.real(h_estimate))
+    h_estimate = np.real(np.fft.ifftshift(h_estimate))
 
-    # Extract kernel from center
-    center_row, center_col = h_estimate.shape[0] // 2, h_estimate.shape[1] // 2
-    half_size = kernel_size // 2
+    # Extract kernel centered around max energy
+    max_pos = np.unravel_index(np.argmax(h_estimate), h_estimate.shape)
+    center_row, center_col = max_pos
+    half_k = kernel_size // 2
 
-    kernel = h_estimate[center_row - half_size:center_row + half_size + 1,
-             center_col - half_size:center_col + half_size + 1]
+    start_r = max(center_row - half_k, 0)
+    start_c = max(center_col - half_k, 0)
+    end_r = start_r + kernel_size
+    end_c = start_c + kernel_size
 
-    # Normalize kernel
-    kernel = np.abs(kernel)
-    if np.sum(kernel) > 0:
-        kernel = kernel / np.sum(kernel)
+    # Handle boundary overflow
+    if end_r > h_estimate.shape[0]:
+        start_r = h_estimate.shape[0] - kernel_size
+        end_r = h_estimate.shape[0]
+    if end_c > h_estimate.shape[1]:
+        start_c = h_estimate.shape[1] - kernel_size
+        end_c = h_estimate.shape[1]
 
-    print(f"Kernel estimated. Sum: {np.sum(kernel):.6f}")
+    kernel = h_estimate[start_r:end_r, start_c:end_c]
+
+    # Normalize
+    kernel_sum = np.sum(kernel)
+    if np.abs(kernel_sum) < 1e-10:
+        print("⚠️ WARNING: Estimated kernel nearly zero — replacing with delta")
+        kernel = np.zeros((kernel_size, kernel_size))
+        kernel[kernel_size // 2, kernel_size // 2] = 1.0
+    else:
+        kernel /= kernel_sum
+
+    print(f"✅ Kernel estimated. Sum: {np.sum(kernel):.6f}, Max: {np.max(kernel):.6f}")
+
+    # Debug plot
+    plt.figure(figsize=(4, 4))
+    plt.imshow(kernel, cmap='hot')
+    plt.title("Estimated Kernel")
+    plt.colorbar()
+    plt.show()
+
     return kernel
+
+def create_synthetic_reference(degraded_img: np.ndarray, blur_kernel: np.ndarray) -> np.ndarray:
+    """
+    Create a synthetic sharp reference by attempting basic deblurring.
+    This provides a better starting point than an unrelated reference image.
+    """
+    kernel_padded = np.zeros_like(degraded_img)
+    k_h, k_w = blur_kernel.shape
+    start_h = (degraded_img.shape[0] - k_h) // 2
+    start_w = (degraded_img.shape[1] - k_w) // 2
+    kernel_padded[start_h:start_h + k_h, start_w:start_w + k_w] = blur_kernel
+    kernel_padded = np.fft.fftshift(kernel_padded)
+
+    G = np.fft.fft2(degraded_img)
+    H = np.fft.fft2(kernel_padded)
+
+    H_conj = np.conj(H)
+    H_magnitude_sq = np.abs(H) ** 2
+
+    inverse_filter = H_conj / (H_magnitude_sq + 0.1 * np.mean(H_magnitude_sq))
+    F_estimate = inverse_filter * G
+
+    synthetic_ref = np.fft.ifft2(F_estimate)
+    synthetic_ref = np.real(synthetic_ref)
+
+    return np.clip(synthetic_ref, 0, 1)
 
 
 def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dict:
@@ -102,7 +151,6 @@ def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dic
     noise_power = np.mean((original - restored) ** 2)
     snr = 10 * np.log10(signal_power / (noise_power + 1e-10))
 
-    # Edge preservation
     grad_orig = np.concatenate([np.gradient(original, axis=1).flatten(),
                                 np.gradient(original, axis=0).flatten()])
     grad_rest = np.concatenate([np.gradient(restored, axis=1).flatten(),
@@ -123,7 +171,7 @@ def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dic
 
 def find_best_reference_match(degraded_img: np.ndarray,
                               reference_images: List[np.ndarray]) -> Tuple[int, float, np.ndarray]:
-    """Find the best matching reference image based on cross-correlation."""
+    """Find the best matching reference image and create synthetic sharp version."""
     best_similarity = -1
     best_index = 0
     best_reference = None
@@ -132,25 +180,39 @@ def find_best_reference_match(degraded_img: np.ndarray,
 
     for i, ref_img in enumerate(reference_images):
         ref_processed, deg_processed = preprocess_images_for_comparison(ref_img, degraded_img)
-        correlation = signal.correlate2d(ref_processed, deg_processed, mode='full')
-        max_correlation = np.max(correlation)
 
-        print(f"  Reference {i}: max correlation = {max_correlation:.4f}")
+        # Compute structural similarity
+        ref_grad = np.gradient(ref_processed)
+        deg_grad = np.gradient(deg_processed)
 
-        if max_correlation > best_similarity:
-            best_similarity = max_correlation
+        grad_similarity = np.corrcoef(ref_grad[0].flatten(), deg_grad[0].flatten())[0, 1]
+        grad_similarity += np.corrcoef(ref_grad[1].flatten(), deg_grad[1].flatten())[0, 1]
+        grad_similarity /= 2
+
+        if np.isnan(grad_similarity):
+            grad_similarity = 0
+
+        print(f"  Reference {i}: gradient similarity = {grad_similarity:.4f}")
+
+        if grad_similarity > best_similarity:
+            best_similarity = grad_similarity
             best_index = i
             best_reference = ref_img
 
-    print(f"Best match: Reference {best_index} with correlation {best_similarity:.4f}")
-    return best_index, best_similarity, best_reference
+    print(f"Best match: Reference {best_index} with similarity {best_similarity:.4f}")
+
+    # Create synthetic sharp reference from the best match
+    best_ref_processed, _ = preprocess_images_for_comparison(best_reference, degraded_img)
+    motion_kernel = np.array([[0, 0, 0.2, 0.6, 0.2, 0, 0]])  # Simple motion blur estimate
+    synthetic_ref = create_synthetic_reference(best_ref_processed, motion_kernel)
+
+    return best_index, best_similarity, synthetic_ref
 
 
 def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> np.ndarray:
     """Apply Wiener deconvolution with proper regularization."""
     rows, cols = degraded.shape
 
-    # Pad kernel to match degraded image size
     kernel_padded = np.zeros((rows, cols))
     k_rows, k_cols = kernel.shape
     start_row = (rows - k_rows) // 2
@@ -158,17 +220,17 @@ def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> 
     kernel_padded[start_row:start_row + k_rows, start_col:start_col + k_cols] = kernel
     kernel_padded = np.fft.fftshift(kernel_padded)
 
-    # Compute FFTs
     G = np.fft.fft2(degraded)
     H = np.fft.fft2(kernel_padded)
 
-    # Apply Wiener filter: W = H* / (|H|² + K)
     H_conj = np.conj(H)
     H_squared = np.abs(H) ** 2
-    epsilon = 1e-10
-    W = H_conj / (H_squared + K + epsilon)
 
-    # Restore image
+    signal_power = np.mean(H_squared)
+    regularization = K * signal_power
+
+    W = H_conj / (H_squared + regularization)
+
     F_estimate = W * G
     restored = np.fft.ifft2(F_estimate)
     restored = np.real(restored)
@@ -188,20 +250,23 @@ def analyze_content_similarity_impact(degraded_img: np.ndarray,
     for i, (ref_img, label) in enumerate(zip(reference_images, reference_labels)):
         print(f"\nAnalyzing reference '{label}'...")
 
-        # Preprocess images
         ref_proc, deg_proc = preprocess_images_for_comparison(ref_img, degraded_img)
-        estimated_kernel = estimate_kernel(ref_proc, deg_proc)
 
-        # Test restoration with multiple K values
+        # Create better synthetic reference
+        motion_kernel = np.array([[0.1, 0.2, 0.4, 0.2, 0.1]])
+        synthetic_ref = create_synthetic_reference(ref_proc, motion_kernel)
+
+        estimated_kernel = estimate_kernel(synthetic_ref, deg_proc)
+
         best_restoration = None
         best_metrics = None
         best_psnr = -np.inf
         best_K = None
 
-        K_values = [0.001, 0.01, 0.1, 1.0]
+        K_values = [0.01, 0.05, 0.1, 0.5]
         for K in K_values:
             restored = wiener_deconvolution(deg_proc, estimated_kernel, K)
-            metrics = calculate_quality_metrics(ref_proc, restored)
+            metrics = calculate_quality_metrics(synthetic_ref, restored)
 
             if metrics['psnr'] > best_psnr:
                 best_psnr = metrics['psnr']
@@ -210,29 +275,31 @@ def analyze_content_similarity_impact(degraded_img: np.ndarray,
                 best_K = K
 
         # Calculate similarity metrics
-        correlation = signal.correlate2d(ref_proc, deg_proc, mode='same')
-        max_spatial_corr = np.max(correlation)
+        ref_grad = np.gradient(ref_proc)
+        deg_grad = np.gradient(deg_proc)
 
-        # Spectral similarity
+        spatial_similarity = np.corrcoef(ref_grad[0].flatten(), deg_grad[0].flatten())[0, 1]
+        if np.isnan(spatial_similarity):
+            spatial_similarity = 0
+
         F_ref = np.fft.fft2(ref_proc)
         F_deg = np.fft.fft2(deg_proc)
         spectral_similarity = np.mean(np.abs(F_ref) * np.abs(F_deg)) / (
                 np.sqrt(np.mean(np.abs(F_ref) ** 2) * np.mean(np.abs(F_deg) ** 2)) + 1e-10)
 
-        # Store results
         results[label] = {
             'estimated_kernel': estimated_kernel,
             'best_restoration': best_restoration,
             'best_metrics': best_metrics,
             'best_K': best_K,
             'similarity_metrics': {
-                'spatial_correlation': max_spatial_corr,
+                'spatial_correlation': spatial_similarity,
                 'spectral_similarity': spectral_similarity
             }
         }
 
         print(f"  Best PSNR: {best_psnr:.2f} dB (K={best_K})")
-        print(f"  Spatial correlation: {max_spatial_corr:.4f}")
+        print(f"  Spatial correlation: {spatial_similarity:.4f}")
         print(f"  Spectral similarity: {spectral_similarity:.4f}")
 
     return results
@@ -241,40 +308,25 @@ def analyze_content_similarity_impact(degraded_img: np.ndarray,
 def advanced_wiener_deconvolution(degraded_img: np.ndarray,
                                   reference_images: List[np.ndarray],
                                   reference_labels: List[str] = None,
-                                  K_values: List[float] = [0.001, 0.01, 0.1, 1.0],
+                                  K_values: List[float] = [0.01, 0.05, 0.1, 0.5],
                                   noise_level: float = 0.0,
                                   noise_type: str = 'gaussian') -> Dict:
     """
     Perform advanced Wiener deconvolution using kernel estimation.
-
-    Args:
-        degraded_img: Input degraded image
-        reference_images: List of natural reference images
-        reference_labels: Labels for reference images
-        K_values: List of regularization parameters to test
-        noise_level: Additional noise level for robustness testing
-        noise_type: Type of noise ('gaussian' or 'uniform')
-
-    Returns:
-        Dictionary containing comprehensive results and analysis
     """
     results = {}
 
-    # Normalize degraded image
     if degraded_img.max() > 1.0:
         degraded_img = degraded_img.astype(np.float64) / 255.0
 
-    # Add controlled noise if specified
     if noise_level > 0:
         degraded_img = add_controlled_noise(degraded_img, noise_level, noise_type)
 
-    # Perform content similarity analysis if labels provided
     if reference_labels and len(reference_labels) == len(reference_images):
         content_analysis = analyze_content_similarity_impact(
             degraded_img, reference_images, reference_labels)
         results['content_similarity_analysis'] = content_analysis
 
-        # Use the reference that achieved the best PSNR
         best_label = max(content_analysis.keys(),
                          key=lambda x: content_analysis[x]['best_metrics']['psnr'])
         best_idx = reference_labels.index(best_label)
@@ -288,36 +340,36 @@ def advanced_wiener_deconvolution(degraded_img: np.ndarray,
             'selection_method': 'content_analysis'
         }
     else:
-        # Fallback: Use cross-correlation method
-        best_idx, similarity, best_ref = find_best_reference_match(degraded_img, reference_images)
+        best_idx, similarity, synthetic_ref = find_best_reference_match(degraded_img, reference_images)
         results['reference_match'] = {
             'best_index': best_idx,
             'similarity': similarity,
-            'reference_image': best_ref,
-            'selection_method': 'cross_correlation'
+            'reference_image': synthetic_ref,
+            'selection_method': 'gradient_correlation'
         }
 
-    # Preprocess images for kernel estimation
-    ref_processed, deg_processed = preprocess_images_for_comparison(best_ref, degraded_img)
+    ref_for_kernel = results['reference_match']['reference_image']
+    if len(ref_for_kernel.shape) == 3:
+        ref_for_kernel = cv2.cvtColor(ref_for_kernel, cv2.COLOR_BGR2GRAY)
 
-    # Estimate kernel
-    estimated_kernel = estimate_kernel(ref_processed, deg_processed)
+    if ref_for_kernel.max() > 1.0:
+        ref_for_kernel = ref_for_kernel / 255.0
+
+    estimated_kernel = estimate_kernel(ref_for_kernel, degraded_img)
     results['estimated_kernel'] = estimated_kernel
 
-    # Apply Wiener filter for different K values
     restored_images = {}
     quality_metrics = {}
 
     for K in K_values:
-        restored = wiener_deconvolution(deg_processed, estimated_kernel, K)
+        restored = wiener_deconvolution(degraded_img, estimated_kernel, K)
         restored_uint8 = (restored * 255).astype(np.uint8)
         restored_images[K] = restored_uint8
-        quality_metrics[K] = calculate_quality_metrics(ref_processed, restored)
+        quality_metrics[K] = calculate_quality_metrics(ref_for_kernel, restored)
 
     results['restored_images'] = restored_images
     results['quality_metrics'] = quality_metrics
 
-    # Find best K value
     best_K = max(K_values, key=lambda k: quality_metrics[k]['psnr'])
     results['best_K'] = best_K
 
@@ -329,7 +381,6 @@ def plot_results(results: Dict, degraded_img: np.ndarray):
     fig = plt.figure(figsize=(16, 10))
     gs = fig.add_gridspec(2, 4, hspace=0.3, wspace=0.3)
 
-    # Row 1: Original images and best restoration
     ax1 = fig.add_subplot(gs[0, 0])
     ax1.imshow(results['reference_match']['reference_image'], cmap='gray')
     ax1.set_title('Best Reference Match')
@@ -340,7 +391,6 @@ def plot_results(results: Dict, degraded_img: np.ndarray):
     ax2.set_title('Degraded Input')
     ax2.axis('off')
 
-    # Best restoration
     best_K = results['best_K']
     ax3 = fig.add_subplot(gs[0, 2])
     best_restored = results['restored_images'][best_K]
@@ -349,13 +399,11 @@ def plot_results(results: Dict, degraded_img: np.ndarray):
     ax3.set_title(f'Best Restoration\nK={best_K}, PSNR={psnr_best:.1f}dB')
     ax3.axis('off')
 
-    # Estimated kernel
     ax4 = fig.add_subplot(gs[0, 3])
     ax4.imshow(results['estimated_kernel'], cmap='hot')
     ax4.set_title('Estimated Kernel')
     ax4.axis('off')
 
-    # PSNR comparison
     ax5 = fig.add_subplot(gs[1, 0:2])
     K_values = list(results['quality_metrics'].keys())
     psnr_values = [results['quality_metrics'][K]['psnr'] for K in K_values]
@@ -366,12 +414,10 @@ def plot_results(results: Dict, degraded_img: np.ndarray):
     ax5.set_title('PSNR vs Regularization Parameter')
     ax5.grid(True, alpha=0.3)
 
-    # Highlight best K
     best_psnr = results['quality_metrics'][best_K]['psnr']
     ax5.semilogx(best_K, best_psnr, 'ro', markersize=10, label=f'Best: K={best_K}')
     ax5.legend()
 
-    # Content similarity analysis
     if 'content_similarity_analysis' in results and results['content_similarity_analysis']:
         content_analysis = results['content_similarity_analysis']
 
@@ -420,7 +466,6 @@ def print_summary(results: Dict):
     print(f"✓ SNR: {best_metrics['snr']:.2f} dB")
     print(f"✓ Edge Preservation: {best_metrics['edge_preservation']:.3f}")
 
-    # Content similarity insights
     if 'content_similarity_analysis' in results and results['content_similarity_analysis']:
         content_analysis = results['content_similarity_analysis']
         print(f"\n📊 CONTENT SIMILARITY INSIGHTS:")
@@ -465,7 +510,7 @@ def run_wiener_restoration(degraded_img: np.ndarray, reference_paths: List[str],
 
     results = advanced_wiener_deconvolution(
         degraded_img, reference_images, reference_labels,
-        K_values=[0.001, 0.01, 0.1, 1.0],
+        K_values=[0.01, 0.05, 0.1, 0.5],
         noise_level=noise_level
     )
 
@@ -485,10 +530,8 @@ def main():
 
     reference_labels = ["landscape", "portrait", "animal", "food", "text"]
 
-    degraded_input = cv2.imread("bauhaus.png", cv2.IMREAD_GRAYSCALE)
-    print(f"Loaded degraded image: bauhaus.png")
+    degraded_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
 
-    # Run restoration tests
     print(f"\n🔬 WITHOUT ADDITIONAL NOISE")
     run_wiener_restoration(degraded_input, reference_paths, reference_labels, 0.0)
 
