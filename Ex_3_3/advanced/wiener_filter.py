@@ -3,6 +3,9 @@ import cv2
 from typing import List, Tuple, Dict
 import matplotlib.pyplot as plt
 
+from advanced.degradation import degrade_image, create_kernels
+
+
 def load_reference_images(reference_paths: List[str]) -> List[np.ndarray]:
     """Load multiple natural reference images for kernel estimation."""
     reference_images = []
@@ -26,7 +29,7 @@ def preprocess_images_for_comparison(ref_img: np.ndarray, degraded_img: np.ndarr
 
 
 def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray,
-                           kernel_size: int = 15, regularization: float = 0.01) -> np.ndarray:
+                    kernel_size: int = 15, regularization: float = 0.01) -> np.ndarray:
     """
     Estimate degradation kernel using stable Wiener formulation.
     """
@@ -99,6 +102,7 @@ def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray,
     plt.show()
 
     return kernel
+
 
 def create_synthetic_reference(degraded_img: np.ndarray, blur_kernel: np.ndarray) -> np.ndarray:
     """
@@ -510,9 +514,15 @@ def main():
 
     reference_labels = ["landscape", "portrait", "animal", "food", "text"]
 
-    degraded_input = cv2.imread("simple_5px.png", cv2.IMREAD_GRAYSCALE)
-    run_wiener_restoration(degraded_input, reference_paths, reference_labels)
+    clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
 
+    kernel_sizes = [5, 15, 25]  # Different kernel sizes for testing
+    for kernel_size in kernel_sizes:
+        kernels = create_kernels(kernel_size)
+
+        for kernel in kernels.values():
+            degraded_input = degrade_image(clean_input, kernel)
+            run_wiener_restoration(degraded_input, reference_paths, reference_labels)
 
 
 if __name__ == "__main__":

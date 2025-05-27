@@ -33,6 +33,7 @@ def create_kernels(kernel_size: int) -> Dict[str, np.ndarray]:
 
     return kernels
 
+
 def add_noise(image: np.ndarray, noise_variance: float) -> np.ndarray:
     """
     Add Gaussian noise to an image.
@@ -44,6 +45,7 @@ def add_noise(image: np.ndarray, noise_variance: float) -> np.ndarray:
     noisy_image = image + noise
     return np.clip(noisy_image, 0, 255).astype(np.uint8)
 
+
 def degrade_image(image: np.ndarray, kernel: np.ndarray, noise_variance: float) -> np.ndarray:
     """
     Degrade an image by applying convolution and adding noise.
@@ -54,11 +56,12 @@ def degrade_image(image: np.ndarray, kernel: np.ndarray, noise_variance: float) 
     """
     # Apply convolution in spatial domain
     blurred = cv2.filter2D(image.astype(np.float64), -1, kernel)
-    
+
     # Add noise
     degraded = add_noise(blurred, noise_variance)
-    
+
     return degraded
+
 
 def pad_to_shape(array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
     """
@@ -66,8 +69,9 @@ def pad_to_shape(array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray
     """
     pad_h = target_shape[0] - array.shape[0]
     pad_w = target_shape[1] - array.shape[1]
-    
+
     return np.pad(array, ((0, pad_h), (0, pad_w)), mode='constant')
+
 
 def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> np.ndarray:
     """
@@ -145,8 +149,8 @@ def butterworth_filter(shape: Tuple[int, int], cutoff: float, order: int = 2) ->
     return np.fft.ifftshift(H)
 
 
-def wiener_with_butterworth(degraded: np.ndarray, kernel: np.ndarray, 
-                           K: float, cutoff: float = 0.5) -> np.ndarray:
+def wiener_with_butterworth(degraded: np.ndarray, kernel: np.ndarray,
+                            K: float, cutoff: float = 0.5) -> np.ndarray:
     """
     Wiener deconvolution with Butterworth filtering for noise suppression.
     """
