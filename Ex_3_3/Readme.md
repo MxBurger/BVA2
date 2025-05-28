@@ -280,7 +280,6 @@ where:
 >filtering principles, the current solution does not perform sufficiently well to fully meet the requirements of the
 > assignment.
 
-
 While the core Wiener filter assumes knowledge of the degradation kernel, this advanced implementation attempts to
 estimate the kernel by comparing the degraded image to natural reference images. In theory, this allows for
 blind deblurring, where the kernel is unknown.
@@ -288,105 +287,147 @@ blind deblurring, where the kernel is unknown.
 ### Goal
 To restore a degraded image without knowing the exact blurring kernel, by:
 
-1. Finding the best matching reference image from a set of natural images.
-
+1. Finding the best matching reference image from a set of natural images using multiple similarity metrics.
 2. Estimating the kernel by comparing the frequency response of the degraded image and the reference image.
-
-3. Applying Wiener deconvolution with the estimated kernel.
+3. Applying Wiener deconvolution with the estimated kernel and optimal regularization parameter.
 
 ```mermaid
 graph LR
 A[degraded image] --> B[find best matching reference]
 B --> C[estimate kernel from frequency domain]
-C --> D[apply Wiener filter]
-D --> E[restore image]
+C --> D[apply Wiener filter with multiple K values]
+D --> E[select best restoration]
+E --> F[restored image]
 ```
 
 ### Implementation
 
-#### Reference Image Selection
+#### Reference Image Selection (`find_best_reference_match`)
 
-Using a collection of reference images (e.g. landscapes, portraits, text), the best match is determined based on:
+A multi-metric approach is used to find the best matching reference image from a collection of natural images
+(landscapes, portraits, animals, food, text, boats). The selection is based on five different similarity metrics:
 
-- **Gradient correlation** (horizontal + vertical)
-- **Structural Similarity Index (SSIM)**
-
->Gradient Correlation is a similarity metric that compares the gradient (edge) structures of two images rather than
-> their raw pixel values. It measures how well the direction and strength of edges in one image align with those in
-> another, typically using the dot product of gradient vectors. This method is particularly useful for images with
-> illumination differences, as gradients are less sensitive to uniform brightness changes. A higher gradient correlation
-> indicates greater structural similarity between the images.
-
+##### 1. Histogram Correlation
+Compares the intensity distribution between images:
 ```python
-ref_grad = np.gradient(ref_processed)
-deg_grad = np.gradient(deg_processed)
-```
-This computes edge information in x and y directions of both the reference and degraded images.
-The average correlation (horizontal and vertical) is then calculated as:
-```python
-grad_similarity = np.corrcoef(ref_grad[0].flatten(), deg_grad[0].flatten())[0, 1]
-grad_similarity += np.corrcoef(ref_grad[1].flatten(), deg_grad[1].flatten())[0, 1]
-grad_similarity /= 2
+hist_ref = cv2.calcHist([ref_processed.astype(np.float32)], [0], None, [256], [0, 1])
+hist_deg = cv2.calcHist([degraded_img.astype(np.float32)], [0], None, [256], [0, 1])
+hist_corr = cv2.compareHist(hist_ref, hist_deg, cv2.HISTCMP_CORREL)
 ```
 
->The Structural Similarity Index (SSIM) is a perceptual metric that measures image similarity by comparing luminance,
-> contrast, and structural information between two images. Unlike simple metrics like MSE or PSNR, SSIM models the human
-> visual system's sensitivity to changes in structure and texture. It produces a value between -1 and 1, where 1
-> indicates perfect similarity. SSIM is commonly used for assessing image quality in restoration tasks. 
-
+##### 2. Structural Similarity Index (SSIM)
+Measures perceptual similarity by comparing luminance, contrast, and structure:
 ```python
-def structural_similarity(img1: np.ndarray, img2: np.ndarray) -> float:
-    img1 = img1.astype(np.float64)
-    img2 = img2.astype(np.float64)
-
-    min_h = min(img1.shape[0], img2.shape[0])
-    min_w = min(img1.shape[1], img2.shape[1])
-    img1 = img1[:min_h, :min_w]
-    img2 = img2[:min_h, :min_w]
-
+def structural_similarity_simple(img1: np.ndarray, img2: np.ndarray) -> float:
     c1 = 0.01 ** 2
     c2 = 0.03 ** 2
 
-    mu1 = cv2.GaussianBlur(img1, (7, 7), 1.5)
-    mu2 = cv2.GaussianBlur(img2, (7, 7), 1.5)
-
+    mu1 = cv2.GaussianBlur(img1, (11, 11), 1.5)
+    mu2 = cv2.GaussianBlur(img2, (11, 11), 1.5)
+    
+    # Calculate means, variances, and covariance
     mu1_sq = mu1 ** 2
     mu2_sq = mu2 ** 2
     mu1_mu2 = mu1 * mu2
 
-    sigma1_sq = cv2.GaussianBlur(img1 ** 2, (7, 7), 1.5) - mu1_sq
-    sigma2_sq = cv2.GaussianBlur(img2 ** 2, (7, 7), 1.5) - mu2_sq
-    sigma12 = cv2.GaussianBlur(img1 * img2, (7, 7), 1.5) - mu1_mu2
+    sigma1_sq = cv2.GaussianBlur(img1 ** 2, (11, 11), 1.5) - mu1_sq
+    sigma2_sq = cv2.GaussianBlur(img2 ** 2, (11, 11), 1.5) - mu2_sq
+    sigma12 = cv2.GaussianBlur(img1 * img2, (11, 11), 1.5) - mu1_mu2
 
+    # SSIM formula
     numerator = (2 * mu1_mu2 + c1) * (2 * sigma12 + c2)
     denominator = (mu1_sq + mu2_sq + c1) * (sigma1_sq + sigma2_sq + c2)
-
+    
     ssim_map = numerator / (denominator + 1e-10)
     return np.mean(ssim_map)
 ```
 
-For one final score, the average of the gradient correlation and SSIM is computed:
+##### 3. Edge Correlation
+Compares edge structures using Canny edge detection:
 ```python
-combined_score = 0.7 * grad_similarity + 0.3 * ssim_score
+edges_ref = cv2.Canny((ref_processed * 255).astype(np.uint8), 50, 150)
+edges_deg = cv2.Canny((degraded_img * 255).astype(np.uint8), 50, 150)
+
+# Normalize and calculate correlation
+edges_ref = edges_ref.astype(np.float64) / 255.0
+edges_deg = edges_deg.astype(np.float64) / 255.0
+edge_corr = np.corrcoef(edges_ref.flatten(), edges_deg.flatten())[0, 1]
 ```
 
-#### Kernel Estimation
+##### 4. Texture Similarity
+Analyzes local variance patterns to compare texture:
+```python
+def texture_similarity(img1: np.ndarray, img2: np.ndarray) -> float:
+    # Convert to uint8 for texture analysis
+    img1_uint8 = (img1 * 255).astype(np.uint8)
+    img2_uint8 = (img2 * 255).astype(np.uint8)
 
-To estimate the degradation kernel $h(x,y)$, the system compares the **frequency domain** representation of
-the degraded image $G(u,v)$ with the most similar reference image $F(u,v)$. It uses the following approximation:
+    # Calculate local variance as texture measure
+    kernel = np.ones((9, 9), np.float32) / 81
+    
+    mean1 = cv2.filter2D(img1_uint8.astype(np.float32), -1, kernel)
+    mean2 = cv2.filter2D(img2_uint8.astype(np.float32), -1, kernel)
+    
+    sqr1 = cv2.filter2D((img1_uint8.astype(np.float32)) ** 2, -1, kernel)
+    sqr2 = cv2.filter2D((img2_uint8.astype(np.float32)) ** 2, -1, kernel)
+    
+    var1 = sqr1 - mean1 ** 2
+    var2 = sqr2 - mean2 ** 2
+    
+    # Correlation between variance maps
+    corr = np.corrcoef(var1.flatten(), var2.flatten())[0, 1]
+    return 0 if np.isnan(corr) else corr
+```
 
+##### 5. Frequency Domain Correlation
+Compares magnitude spectra in the frequency domain:
+```python
+def frequency_correlation(img1: np.ndarray, img2: np.ndarray) -> float:
+    # FFT magnitude spectra
+    fft1 = np.fft.fft2(img1)
+    fft2 = np.fft.fft2(img2)
+    
+    mag1 = np.abs(fft1)
+    mag2 = np.abs(fft2)
+    
+    # Log transform to compress dynamic range
+    log_mag1 = np.log(mag1 + 1)
+    log_mag2 = np.log(mag2 + 1)
+    
+    # Correlation of log magnitudes
+    corr = np.corrcoef(log_mag1.flatten(), log_mag2.flatten())[0, 1]
+    return 0 if np.isnan(corr) else corr
+```
+
+##### Combined Similarity Score
+The final similarity score is a weighted combination of all metrics:
+```python
+combined_score = (0.25 * hist_corr +
+                  0.30 * ssim_score +
+                  0.20 * edge_corr +
+                  0.15 * texture_corr +
+                  0.10 * freq_corr)
+```
+
+The weights prioritize SSIM (30%) and histogram correlation (25%) as the most important metrics, followed by edge correlation (20%), texture similarity (15%), and frequency correlation (10%).
+
+#### Kernel Estimation (`estimate_kernel`)
+
+The kernel estimation process uses the frequency domain relationship between the reference and degraded images:
+
+##### Step 1: Adaptive Kernel Size Estimation
+```python
+def estimate_kernel_size(degraded_img: np.ndarray) -> int:
+    min_dim = min(degraded_img.shape[:2])
+    size = max(5, min(25, min_dim // 15))
+    return size if size % 2 == 1 else size + 1
+```
+
+##### Step 2: Frequency Domain Kernel Estimation
+The degradation kernel is estimated using:
 $$
 H(u,v) \approx \frac{G(u,v) \cdot F^*(u,v)}{|F(u,v)|^2 + \epsilon}
 $$
-
-Where:
-- $G(u,v)$ is the Fourier transform of the degraded image  
-- $F(u,v)$ is the Fourier transform of the selected reference  
-- $F^*(u,v)$ is the complex conjugate of \( F(u,v) \)  
-- $\epsilon$ is a small constant to avoid division by zero
-
-Once the estimated kernel in the frequency domain $H(u,v)$  is computed, the inverse FFT is used to recover the spatial
-domain representation $h(x,y)$, which is then centered and normalized.
 
 ```python
 F = np.fft.fft2(original_img)
@@ -397,48 +438,61 @@ F_magnitude_sq = np.abs(F) ** 2
 epsilon = np.mean(F_magnitude_sq) * 0.01
 
 H_estimate = (G * F_conj) / (F_magnitude_sq + epsilon)
-h_estimate = np.fft.ifft2(H_estimate)
-h_estimate = np.real(np.fft.ifftshift(h_estimate))
 ```
 
-After computing the estimated kernel in the frequency domain and converting it back to spatial domain,
-the function needs to extract the actual kernel from the full-sized response and center it properly.
-
+##### Step 3: Spatial Domain Conversion and Centering
 ```python
+h_estimate = np.fft.ifft2(H_estimate)
+h_estimate = np.real(np.fft.ifftshift(h_estimate))
+
+# Find the peak and center the kernel
 max_pos = np.unravel_index(np.argmax(h_estimate), h_estimate.shape)
 center_row, center_col = max_pos
-
 half_k = kernel_size // 2
 
+# Extract kernel with boundary checking
 start_r = max(center_row - half_k, 0)
 start_c = max(center_col - half_k, 0)
 end_r = start_r + kernel_size
 end_c = start_c + kernel_size
-```
 
-Finally, the kernel is extracted from the full response and normalized so that its elements sum to 1.
-
-```python
 kernel = h_estimate[start_r:end_r, start_c:end_c]
+
+# Normalize kernel
 kernel_sum = np.sum(kernel)
 kernel /= kernel_sum
 ```
 
+#### Advanced Wiener Deconvolution (`advanced_wiener_deconvolution`)
 
-#### Restoration with Estimated Kernel
+The complete restoration process involves:
 
-After estimating the kernel, Wiener deconvolution is applied again:
-
+##### Step 1: Reference Matching and Kernel Estimation
 ```python
-restored = wiener_deconvolution(degraded_img, estimated_kernel, K)
+best_idx, similarity, reference = find_best_reference_match(degraded_img, reference_images)
+estimated_kernel = estimate_kernel(reference, degraded_img)
 ```
 
-Multiple values for the regularization constant $K$ are tested to find the optimal result.
-The metrics used for evaluation are **PSNR**, **SNR**, and **edge preservation**.
+##### Step 2: Multi-Parameter Optimization
+The system tests multiple regularization parameters to find the optimal restoration:
+```python
+K_values = [0.0001, 0.001, 0.01, 0.05, 0.1, 0.5]  # Default values
 
-- **PSNR (Peak Signal-to-Noise Ratio)** quantifies pixel-wise accuracy.  
-- **SNR (Signal-to-Noise Ratio)** gives the overall signal integrity.  
-- **Edge preservation** is calculated using gradient correlation between the restored image and the original image.
+for K in K_values:
+    restored = wiener_deconvolution(degraded_img, estimated_kernel, K)
+    quality_metrics[K] = calculate_quality_metrics(reference, restored)
+
+# Select best K based on PSNR
+best_K = max(K_values, key=lambda k: quality_metrics[k]['psnr'])
+```
+
+##### Step 3: Quality Metrics Evaluation
+The system evaluates restoration quality using multiple metrics:
+
+- **PSNR (Peak Signal-to-Noise Ratio)**: Measures pixel-wise accuracy
+- **MSE (Mean Squared Error)**: Quantifies reconstruction error
+- **SNR (Signal-to-Noise Ratio)**: Evaluates signal integrity
+- **Edge Preservation**: Measures preservation of edge structures
 
 ```python
 def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dict:
@@ -449,8 +503,11 @@ def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dic
     noise_power = np.mean((original - restored) ** 2)
     snr = 10 * np.log10(signal_power / (noise_power + 1e-10))
 
-    grad_orig = np.concatenate([np.gradient(original, axis=1).flatten(), np.gradient(original, axis=0).flatten()])
-    grad_rest = np.concatenate([np.gradient(restored, axis=1).flatten(), np.gradient(restored, axis=0).flatten()])
+    # Edge preservation using gradient correlation
+    grad_orig = np.concatenate([np.gradient(original, axis=1).flatten(), 
+                               np.gradient(original, axis=0).flatten()])
+    grad_rest = np.concatenate([np.gradient(restored, axis=1).flatten(), 
+                               np.gradient(restored, axis=0).flatten()])
 
     edge_preservation = 0.0
     if np.std(grad_orig) > 1e-10 and np.std(grad_rest) > 1e-10:
@@ -459,3 +516,15 @@ def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dic
 
     return {'psnr': psnr, 'mse': mse, 'snr': snr, 'edge_preservation': edge_preservation}
 ```
+
+
+#### Visualization and Analysis
+
+Visualization is realised in `plot_results()`, showing:
+- Best reference match
+- Degraded input image
+- Best restoration result
+- Estimated vs. true kernel comparison 
+- PSNR vs. regularization parameter curve with optimal point highlighted
+
+
