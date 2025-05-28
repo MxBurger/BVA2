@@ -36,6 +36,7 @@ def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray, kernel_s
     end_r = start_r + kernel_size
     end_c = start_c + kernel_size
 
+    # Ensure the kernel does not exceed the image boundaries
     if end_r > h_estimate.shape[0]:
         start_r = h_estimate.shape[0] - kernel_size
         end_r = h_estimate.shape[0]
@@ -67,10 +68,10 @@ def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> 
     H_conj = np.conj(H)
     H_squared = np.abs(H) ** 2
 
-    signal_power = np.mean(H_squared)
-    regularization = K * signal_power
+    kernel_power = np.mean(H_squared)
+    regularization = K * kernel_power
 
-    W = H_conj / (H_squared + regularization)
+    W = H_conj / (H_squared + K)
 
     F_estimate = W * G
     restored = np.fft.ifft2(F_estimate)
@@ -81,7 +82,7 @@ def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> 
 
 def advanced_wiener_deconvolution(degraded_img: np.ndarray, reference_images: List[np.ndarray],
                                   reference_labels: List[str] = None,
-                                  K_values: List[float] = [0.01, 0.05, 0.1, 0.5]) -> Dict:
+                                  K_values: List[float] = [0.001, 0.01, 0.05, 0.1, 0.5]) -> Dict:
     results = {}
 
     if degraded_img.max() > 1.0:

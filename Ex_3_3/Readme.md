@@ -419,9 +419,6 @@ kernel /= kernel_sum
 ```
 
 
-
-
-
 #### Restoration with Estimated Kernel
 
 After estimating the kernel, Wiener deconvolution is applied again:
