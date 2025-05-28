@@ -356,6 +356,15 @@ E --> F[restored image]
 A multi-metric approach is used to find the best matching reference image from a collection of natural images
 (landscapes, portraits, animals, food, text, boats). The selection is based on five different similarity metrics:
 
+The chosen reference images are:
+![boat.png](advanced/ref/boat.png)
+![landscape_gray.png](advanced/ref/landscape_gray.png)
+![lena_gray.tif](advanced/ref/lena_gray.tif)
+![mandril_gray.tif](advanced/ref/mandril_gray.tif)
+![peppers_gray.tif](advanced/ref/peppers_gray.tif)
+![text.png](advanced/ref/text.png)
+
+
 ##### 1. Histogram Correlation
 Compares the intensity distribution between images:
 ```python
@@ -623,7 +632,16 @@ blind deconvolution - restoring images without prior knowledge of the degradatio
 The goal was to combine multi-metric reference matching with frequency-domain kernel estimation to achieve
 automated image restoration.
 
-This implementation has significant limitations:
+Unsolved Fundamental Challenges in this implementation basically are:
+
+- Ambiguous Kernels: Multiple kernel-image combinations can produce the same degraded result,
+making unique kernel estimation hard.
+- Noise Sensitivity: The frequency domain kernel estimation $H(u,v) ≈ \frac{G(u,v)·F*(u,v)}{(|F(u,v)|² + ε)}$ becomes unreliable with noise,
+as demonstrated by the severe performance degradation at noise variance >5.
+- Reference Selection Criticality: The success heavily depends on finding a reference image with similar frequency
+characteristics rather than semantic content. 
+
+This results in bad performance across all tested degradation types:
 - **Gaussian blur**: Poor kernel estimation with minimal PSNR improvement (<1dB), estimated kernels show
 irregular patterns instead of smooth Gaussian shapes
 
@@ -634,3 +652,5 @@ as noise rather than uniform patterns
 an almost random kernel estimation behavior
 
 
+_The implemantation does not fulfill the assignment requirements._
+![boat.png](img/advanced/boat.png)

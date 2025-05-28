@@ -21,12 +21,12 @@ def run_wiener_restoration(degraded_img, reference_paths: List[str], reference_l
     print_summary(results)
 
 
-def test_different_kernels():
+def test_different_kernels(image_path="simple.png"):
     reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.tif", "ref/mandril_gray.tif",
                        "ref/peppers_gray.tif", "ref/text.png", "ref/boat.png"]
     reference_labels = ["landscape", "portrait", "animal", "food", "text", "boat"]
 
-    clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
+    clean_input = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
     kernel_sizes = [5, 15, 25]
     for kernel_size in kernel_sizes:
@@ -38,12 +38,12 @@ def test_different_kernels():
             run_wiener_restoration(degraded_input, reference_paths, reference_labels, kernel, kernel_info)
 
 
-def test_noise_levels():
+def test_noise_levels(image_path="simple.png"):
     reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.tif", "ref/mandril_gray.tif",
                        "ref/peppers_gray.tif", "ref/text.png", "ref/boat.png"]
     reference_labels = ["landscape", "portrait", "animal", "food", "text", "boat"]
 
-    clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
+    clean_input = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     kernels = create_kernels(15)
     gaussian_kernel = kernels['gaussian']
 
