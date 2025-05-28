@@ -219,10 +219,45 @@ as the test results clearly show.
 ![diagonal_kernel_size.png](img/boat/diagonal_kernel_size.png)
 ![diagonal_noise_level.png](img/boat/diagonal_noise_level.png)
 
+### Analysis
+The results demonstrate that higher **PSNR** values do not always correlate with better visual quality.
+This is particularly evident in the test images where:
 
-> TODO: Discuss the results
+- Very low $K$ values (K=0.0001) often achieve visually sharp images but produce poor **PSNR** results with
+because of the noise amplification
+- Higher $K$ values (K=0.1) yield smoother images with better **PSNR** but lose fine details, leading to a
+visually worse restoration but better mathematical similarity to the original image.
 
-#### Additional approach with additional Butterworth-Filter `butterworth_filter`
+Moderate $K$ values ($K=0.001$ to $K=0.01$) provide the best balance between noise suppression and detail preservation.
+
+**Mean Filter Restoration:**
+
+- Generally poor performance
+- High noise amplification at low $K$ values
+- Limited detail recovery capability
+
+**Gaussian Filter Restoration:**
+
+- Not as good as expected performance
+- noise suppression with reasonable detail preservation
+- Optimal K values typically around 0.001-0.01
+
+**Motion Blur Restoration:**
+
+- Horizontal and Vertical: Good restoration quality when blur direction matches the kernel
+- Diagonal: Good performance 
+- Motion blur kernels show the most dramatic improvement with proper Wiener filtering
+
+#### Overall Noise Level Impact:
+
+Higher noise levels (variance 250) significantly degrade restoration quality across all methods:
+
+Increased optimal K values needed for noise suppression
+Greater loss of fine details
+More aggressive regularization required
+
+
+### Approach with additional Butterworth-Filter `butterworth_filter`
 For additional filtering, a Butterworth Lowpass-filter can be applied to the restored image.
 
 The Butterworth filter is defined as:
@@ -270,6 +305,20 @@ where:
 #### Diagonal Motion Blur with Butterworth
 ![diagonal_kernel_size_butterworth.png](img/diagonal_and_butterworth.png)
 ![diagonal_and_butterworth.png](img/boat/diagonal_and_butterworth.png)
+
+#### Analysis
+As expected, the additional Butterworth lowpass filtering provides:
+
+- Improved noise suppression in high-frequency regions
+- Smoother visual appearance at the cost of some detail loss
+- Better PSNR values in most cases, though with reduced sharpness
+
+
+#### Conclusion
+The Wiener filter demonstrates strong performance for motion blur restoration and moderate success with directional blur.
+The critical factor is proper regularization parameter selection, which requires balancing noise suppression against
+detail preservation. The results confirm that effective image restoration requires consideration of both quantitative
+metrics and visual quality assessment.
 
 <!-- pagebreak -->
 
