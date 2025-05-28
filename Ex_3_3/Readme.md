@@ -271,6 +271,8 @@ where:
 ![diagonal_kernel_size_butterworth.png](img/diagonal_and_butterworth.png)
 ![diagonal_and_butterworth.png](img/boat/diagonal_and_butterworth.png)
 
+<!-- pagebreak -->
+
 ## Advanced Implementation
 
 While the core Wiener filter assumes knowledge of the degradation kernel, this advanced implementation attempts to
@@ -381,10 +383,44 @@ Once the estimated kernel in the frequency domain $H(u,v)$  is computed, the inv
 domain representation $h(x,y)$, which is then centered and normalized.
 
 ```python
+F = np.fft.fft2(original_img)
+G = np.fft.fft2(degraded_img)
+
+F_conj = np.conj(F)
+F_magnitude_sq = np.abs(F) ** 2
+epsilon = np.mean(F_magnitude_sq) * 0.01
+
 H_estimate = (G * F_conj) / (F_magnitude_sq + epsilon)
 h_estimate = np.fft.ifft2(H_estimate)
 h_estimate = np.real(np.fft.ifftshift(h_estimate))
 ```
+
+After computing the estimated kernel in the frequency domain and converting it back to spatial domain,
+the function needs to extract the actual kernel from the full-sized response and center it properly.
+
+```python
+max_pos = np.unravel_index(np.argmax(h_estimate), h_estimate.shape)
+center_row, center_col = max_pos
+
+half_k = kernel_size // 2
+
+start_r = max(center_row - half_k, 0)
+start_c = max(center_col - half_k, 0)
+end_r = start_r + kernel_size
+end_c = start_c + kernel_size
+```
+
+Finally, the kernel is extracted from the full response and normalized so that its elements sum to 1.
+
+```python
+kernel = h_estimate[start_r:end_r, start_c:end_c]
+kernel_sum = np.sum(kernel)
+kernel /= kernel_sum
+```
+
+
+
+
 
 #### Restoration with Estimated Kernel
 

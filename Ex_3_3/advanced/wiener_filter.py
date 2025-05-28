@@ -15,15 +15,8 @@ def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray, kernel_s
     if kernel_size is None:
         kernel_size = estimate_kernel_size(degraded_img)
 
-    min_h = min(original_img.shape[0], degraded_img.shape[0])
-    min_w = min(original_img.shape[1], degraded_img.shape[1])
-    original_img = original_img[:min_h, :min_w]
-    degraded_img = degraded_img[:min_h, :min_w]
-
-    pad_shape = [min_h + kernel_size, min_w + kernel_size]
-
-    F = np.fft.fft2(original_img, s=pad_shape)
-    G = np.fft.fft2(degraded_img, s=pad_shape)
+    F = np.fft.fft2(original_img)
+    G = np.fft.fft2(degraded_img)
 
     F_conj = np.conj(F)
     F_magnitude_sq = np.abs(F) ** 2
@@ -53,11 +46,7 @@ def estimate_kernel(original_img: np.ndarray, degraded_img: np.ndarray, kernel_s
     kernel = h_estimate[start_r:end_r, start_c:end_c]
 
     kernel_sum = np.sum(kernel)
-    if np.abs(kernel_sum) < 1e-10:
-        kernel = np.zeros((kernel_size, kernel_size))
-        kernel[kernel_size // 2, kernel_size // 2] = 1.0
-    else:
-        kernel /= kernel_sum
+    kernel /= kernel_sum
 
     return kernel
 
