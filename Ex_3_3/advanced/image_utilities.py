@@ -76,7 +76,6 @@ def find_best_reference_match(degraded_img: np.ndarray, reference_images: List[n
             best_reference = ref_img
 
     best_ref_processed, _ = preprocess_images_for_comparison(best_reference, degraded_img)
-    motion_kernel = np.array([[0, 0, 0.2, 0.6, 0.2, 0, 0]])
 
     return best_index, best_similarity, best_ref_processed
 
