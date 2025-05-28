@@ -2,7 +2,8 @@ import numpy as np
 import cv2
 from typing import List, Dict
 
-from image_utilities import find_best_reference_match, calculate_quality_metrics
+from image_utilities import calculate_quality_metrics
+from reference_matching import find_best_reference_match
 
 
 def estimate_kernel_size(degraded_img: np.ndarray) -> int:

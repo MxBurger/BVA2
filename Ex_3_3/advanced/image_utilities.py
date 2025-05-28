@@ -47,39 +47,6 @@ def preprocess_images_for_comparison(ref_img: np.ndarray, degraded_img: np.ndarr
     deg_resized = cv2.resize(degraded_img, target_size)
     return ref_resized / 255.0, deg_resized / 255.0
 
-
-def find_best_reference_match(degraded_img: np.ndarray, reference_images: List[np.ndarray]) -> Tuple[
-    int, float, np.ndarray]:
-    best_similarity = -1
-    best_index = 0
-    best_reference = None
-
-    for i, ref_img in enumerate(reference_images):
-        ref_processed, deg_processed = preprocess_images_for_comparison(ref_img, degraded_img)
-
-        ref_grad = np.gradient(ref_processed)
-        deg_grad = np.gradient(deg_processed)
-
-        grad_similarity = np.corrcoef(ref_grad[0].flatten(), deg_grad[0].flatten())[0, 1]
-        grad_similarity += np.corrcoef(ref_grad[1].flatten(), deg_grad[1].flatten())[0, 1]
-        grad_similarity /= 2
-
-        if np.isnan(grad_similarity):
-            grad_similarity = 0
-
-        ssim_score = structural_similarity(ref_processed, deg_processed)
-        combined_score = 0.7 * grad_similarity + 0.3 * ssim_score
-
-        if combined_score > best_similarity:
-            best_similarity = combined_score
-            best_index = i
-            best_reference = ref_img
-
-    best_ref_processed, _ = preprocess_images_for_comparison(best_reference, degraded_img)
-
-    return best_index, best_similarity, best_ref_processed
-
-
 def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dict:
     mse = np.mean((original - restored) ** 2)
     psnr = float('inf') if mse == 0 else 10 * np.log10(1.0 / mse)
