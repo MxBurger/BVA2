@@ -275,6 +275,12 @@ where:
 
 ## Advanced Implementation
 
+>**Important Notice:**
+> This implementation is submitted as-is. While this implementation demonstrates a theoretical understanding of Wiener
+>filtering principles, the current solution does not perform sufficiently well to fully meet the requirements of the
+> assignment.
+
+
 While the core Wiener filter assumes knowledge of the degradation kernel, this advanced implementation attempts to
 estimate the kernel by comparing the degraded image to natural reference images. In theory, this allows for
 blind deblurring, where the kernel is unknown.
@@ -432,4 +438,24 @@ The metrics used for evaluation are **PSNR**, **SNR**, and **edge preservation**
 
 - **PSNR (Peak Signal-to-Noise Ratio)** quantifies pixel-wise accuracy.  
 - **SNR (Signal-to-Noise Ratio)** gives the overall signal integrity.  
-- **Edge preservation** is calculated using gradient correlation between the restored and 
+- **Edge preservation** is calculated using gradient correlation between the restored image and the original image.
+
+```python
+def calculate_quality_metrics(original: np.ndarray, restored: np.ndarray) -> Dict:
+    mse = np.mean((original - restored) ** 2)
+    psnr = float('inf') if mse == 0 else 10 * np.log10(1.0 / mse)
+
+    signal_power = np.mean(original ** 2)
+    noise_power = np.mean((original - restored) ** 2)
+    snr = 10 * np.log10(signal_power / (noise_power + 1e-10))
+
+    grad_orig = np.concatenate([np.gradient(original, axis=1).flatten(), np.gradient(original, axis=0).flatten()])
+    grad_rest = np.concatenate([np.gradient(restored, axis=1).flatten(), np.gradient(restored, axis=0).flatten()])
+
+    edge_preservation = 0.0
+    if np.std(grad_orig) > 1e-10 and np.std(grad_rest) > 1e-10:
+        edge_corr = np.corrcoef(grad_orig, grad_rest)[0, 1]
+        edge_preservation = edge_corr if not np.isnan(edge_corr) else 0.0
+
+    return {'psnr': psnr, 'mse': mse, 'snr': snr, 'edge_preservation': edge_preservation}
+```
