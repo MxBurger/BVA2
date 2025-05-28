@@ -168,7 +168,7 @@ restored = np.real(restored)
 ```
 
 
-### Test-Pictures
+### Test-Images
 
 To quantify the results, the PSNR (Peak Signal-to-Noise Ratio) is used. The PSNR is defined as:
 $$
@@ -575,5 +575,62 @@ Visualization is realised in `plot_results()`, showing:
 - Best restoration result
 - Estimated vs. true kernel comparison 
 - PSNR vs. regularization parameter curve with optimal point highlighted
+
+
+### Test-Images
+
+#### Mean Filter
+![mean5.png](img/advanced/mean5.png)
+![mean15.png](img/advanced/mean15.png)
+![mean25.png](img/advanced/mean25.png)
+
+#### Gaussian Filter
+![gauss5.png](img/advanced/gauss5.png)
+![gauss15.png](img/advanced/gauss15.png)
+![gauss25.png](img/advanced/gauss25.png)
+
+#### Horizontal Motion Blur
+![horizontal5.png](img/advanced/horizontal5.png)
+![horizontal15.png](img/advanced/horizontal15.png)
+![horizontal25.png](img/advanced/horizontal25.png)
+
+#### Vertical Motion Blur
+![vertical5.png](img/advanced/vertical5.png)
+![vertical15.png](img/advanced/vertical15.png)
+![vertical25.png](img/advanced/vertical25.png)![mean5.png](img/advanced/mean5.png)
+
+#### Diagonal Motion Blur
+![diagonal5.png](img/advanced/diagonal5.png)
+![diagonal15.png](img/advanced/diagonal15.png)
+![diagonal25.png](img/advanced/diagonal25.png)
+
+
+#### Noise Influence
+
+`0` noise variance:
+![noise0.png](img/advanced/noise0.png)
+`1` noise variance:
+![noise1.png](img/advanced/noise1.png)
+`5` noise variance:
+![noise5.png](img/advanced/noise5.png)
+`10` noise variance:
+![noise10.png](img/advanced/noise10.png)
+
+
+### Analysis
+The advanced implementation represents an ambitious attempt at
+blind deconvolution - restoring images without prior knowledge of the degradation kernel.
+The goal was to combine multi-metric reference matching with frequency-domain kernel estimation to achieve
+automated image restoration.
+
+This implementation has significant limitations:
+- **Gaussian blur**: Poor kernel estimation with minimal PSNR improvement (<1dB), estimated kernels show
+irregular patterns instead of smooth Gaussian shapes
+
+- **Mean filter**: Failed restoration with degraded visual quality, estimated kernels appear
+as noise rather than uniform patterns
+
+- **Noise sensitivity**: Performance severely degrades with noise variance >5, introducing
+an almost random kernel estimation behavior
 
 

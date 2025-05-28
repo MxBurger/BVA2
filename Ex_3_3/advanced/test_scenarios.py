@@ -26,7 +26,7 @@ def test_different_kernels():
                        "ref/peppers_gray.tif", "ref/text.png", "ref/boat.png"]
     reference_labels = ["landscape", "portrait", "animal", "food", "text", "boat"]
 
-    clean_input = cv2.imread("other_boat.png", cv2.IMREAD_GRAYSCALE)
+    clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
 
     kernel_sizes = [5, 15, 25]
     for kernel_size in kernel_sizes:
@@ -43,7 +43,7 @@ def test_noise_levels():
                        "ref/peppers_gray.tif", "ref/text.png", "ref/boat.png"]
     reference_labels = ["landscape", "portrait", "animal", "food", "text", "boat"]
 
-    clean_input = cv2.imread("other_boat.png", cv2.IMREAD_GRAYSCALE)
+    clean_input = cv2.imread("simple.png", cv2.IMREAD_GRAYSCALE)
     kernels = create_kernels(15)
     gaussian_kernel = kernels['gaussian']
 
