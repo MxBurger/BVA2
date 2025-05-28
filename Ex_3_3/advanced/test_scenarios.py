@@ -22,8 +22,8 @@ def run_wiener_restoration(degraded_img, reference_paths: List[str], reference_l
 
 
 def test_different_kernels(image_path="simple.png"):
-    reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.tif", "ref/mandril_gray.tif",
-                       "ref/peppers_gray.tif", "ref/text.png", "ref/boat.png"]
+    reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.png", "ref/mandril_gray.png",
+                       "ref/peppers_gray.png", "ref/text.png", "ref/boat.png"]
     reference_labels = ["landscape", "portrait", "animal", "food", "text", "boat"]
 
     clean_input = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -39,8 +39,8 @@ def test_different_kernels(image_path="simple.png"):
 
 
 def test_noise_levels(image_path="simple.png"):
-    reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.tif", "ref/mandril_gray.tif",
-                       "ref/peppers_gray.tif", "ref/text.png", "ref/boat.png"]
+    reference_paths = ["ref/landscape_gray.png", "ref/lena_gray.png", "ref/mandril_gray.png",
+                       "ref/peppers_gray.png", "ref/text.png", "ref/boat.png"]
     reference_labels = ["landscape", "portrait", "animal", "food", "text", "boat"]
 
     clean_input = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)

@@ -359,9 +359,9 @@ A multi-metric approach is used to find the best matching reference image from a
 The chosen reference images are:
 ![boat.png](advanced/ref/boat.png)
 ![landscape_gray.png](advanced/ref/landscape_gray.png)
-![lena_gray.tif](advanced/ref/lena_gray.tif)
-![mandril_gray.tif](advanced/ref/mandril_gray.tif)
-![peppers_gray.tif](advanced/ref/peppers_gray.tif)
+![lena_gray.png](advanced/ref/lena_gray.png)
+![mandril_gray.png](advanced/ref/mandril_gray.png)
+![peppers_gray.png](advanced/ref/peppers_gray.png)
 ![text.png](advanced/ref/text.png)
 
 
