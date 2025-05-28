@@ -68,8 +68,6 @@ def wiener_deconvolution(degraded: np.ndarray, kernel: np.ndarray, K: float) -> 
     H_conj = np.conj(H)
     H_squared = np.abs(H) ** 2
 
-    kernel_power = np.mean(H_squared)
-    regularization = K * kernel_power
 
     W = H_conj / (H_squared + K)
 
